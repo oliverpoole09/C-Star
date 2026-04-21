@@ -1,7 +1,7 @@
 CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o: \
- /home/olivergp09/Code/C*/compiler/src/tokenizer/tokenizer.c \
+ /home/olivergp09/Code/C-Star/compiler/src/tokenizer/tokenizer.c \
  /usr/include/stdc-predef.h \
- /home/olivergp09/Code/C*/compiler/src/tokenizer/tokenizer.h \
+ /home/olivergp09/Code/C-Star/compiler/src/tokenizer/tokenizer.h \
  /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \

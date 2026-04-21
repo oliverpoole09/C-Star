@@ -1,8 +1,8 @@
 CMakeFiles/csc.dir/src/parser/parser.c.o: \
- /home/olivergp09/Code/C*/compiler/src/parser/parser.c \
+ /home/olivergp09/Code/C-Star/compiler/src/parser/parser.c \
  /usr/include/stdc-predef.h \
- /home/olivergp09/Code/C*/compiler/src/parser/parser.h \
- /home/olivergp09/Code/C*/compiler/src/parser/../tokenizer/tokenizer.h \
+ /home/olivergp09/Code/C-Star/compiler/src/parser/parser.h \
+ /home/olivergp09/Code/C-Star/compiler/src/parser/../tokenizer/tokenizer.h \
  /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \

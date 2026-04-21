@@ -1,6 +1,6 @@
 CMakeFiles/csc.dir/src/main.c.o: \
- /home/olivergp09/Code/C*/compiler/src/main.c /usr/include/stdc-predef.h \
- /usr/include/stdio.h \
+ /home/olivergp09/Code/C-Star/compiler/src/main.c \
+ /usr/include/stdc-predef.h /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
  /usr/include/x86_64-linux-gnu/bits/wordsize.h \
@@ -52,8 +52,8 @@ CMakeFiles/csc.dir/src/main.c.o: \
  /usr/include/x86_64-linux-gnu/bits/types/locale_t.h \
  /usr/include/x86_64-linux-gnu/bits/types/__locale_t.h \
  /usr/include/strings.h /usr/include/ctype.h \
- /home/olivergp09/Code/C*/compiler/src/./tokenizer/tokenizer.h \
- /home/olivergp09/Code/C*/compiler/src/./parser/parser.h \
- /home/olivergp09/Code/C*/compiler/src/./parser/../tokenizer/tokenizer.h \
- /home/olivergp09/Code/C*/compiler/src/./generation/generation.h \
- /home/olivergp09/Code/C*/compiler/src/./generation/../parser/parser.h
+ /home/olivergp09/Code/C-Star/compiler/src/./tokenizer/tokenizer.h \
+ /home/olivergp09/Code/C-Star/compiler/src/./parser/parser.h \
+ /home/olivergp09/Code/C-Star/compiler/src/./parser/../tokenizer/tokenizer.h \
+ /home/olivergp09/Code/C-Star/compiler/src/./generation/generation.h \
+ /home/olivergp09/Code/C-Star/compiler/src/./generation/../parser/parser.h

@@ -53,10 +53,10 @@ RM = /usr/bin/cmake -E rm -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = "/home/olivergp09/Code/C*/compiler"
+CMAKE_SOURCE_DIR = /home/olivergp09/Code/C-Star/compiler
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = "/home/olivergp09/Code/C*/compiler/build"
+CMAKE_BINARY_DIR = /home/olivergp09/Code/C-Star/compiler/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/csc.dir/depend.make
@@ -70,60 +70,60 @@ include CMakeFiles/csc.dir/progress.make
 include CMakeFiles/csc.dir/flags.make
 
 CMakeFiles/csc.dir/src/main.c.o: CMakeFiles/csc.dir/flags.make
-CMakeFiles/csc.dir/src/main.c.o: /home/olivergp09/Code/C*/compiler/src/main.c
+CMakeFiles/csc.dir/src/main.c.o: /home/olivergp09/Code/C-Star/compiler/src/main.c
 CMakeFiles/csc.dir/src/main.c.o: CMakeFiles/csc.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/home/olivergp09/Code/C*/compiler/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/csc.dir/src/main.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/main.c.o -MF CMakeFiles/csc.dir/src/main.c.o.d -o CMakeFiles/csc.dir/src/main.c.o -c "/home/olivergp09/Code/C*/compiler/src/main.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/olivergp09/Code/C-Star/compiler/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building C object CMakeFiles/csc.dir/src/main.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/main.c.o -MF CMakeFiles/csc.dir/src/main.c.o.d -o CMakeFiles/csc.dir/src/main.c.o -c /home/olivergp09/Code/C-Star/compiler/src/main.c
 
 CMakeFiles/csc.dir/src/main.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/csc.dir/src/main.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/olivergp09/Code/C*/compiler/src/main.c" > CMakeFiles/csc.dir/src/main.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/olivergp09/Code/C-Star/compiler/src/main.c > CMakeFiles/csc.dir/src/main.c.i
 
 CMakeFiles/csc.dir/src/main.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/csc.dir/src/main.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/olivergp09/Code/C*/compiler/src/main.c" -o CMakeFiles/csc.dir/src/main.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/olivergp09/Code/C-Star/compiler/src/main.c -o CMakeFiles/csc.dir/src/main.c.s
 
 CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o: CMakeFiles/csc.dir/flags.make
-CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o: /home/olivergp09/Code/C*/compiler/src/tokenizer/tokenizer.c
+CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o: /home/olivergp09/Code/C-Star/compiler/src/tokenizer/tokenizer.c
 CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o: CMakeFiles/csc.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/home/olivergp09/Code/C*/compiler/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o -MF CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o.d -o CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o -c "/home/olivergp09/Code/C*/compiler/src/tokenizer/tokenizer.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/olivergp09/Code/C-Star/compiler/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o -MF CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o.d -o CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o -c /home/olivergp09/Code/C-Star/compiler/src/tokenizer/tokenizer.c
 
 CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/olivergp09/Code/C*/compiler/src/tokenizer/tokenizer.c" > CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/olivergp09/Code/C-Star/compiler/src/tokenizer/tokenizer.c > CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.i
 
 CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/olivergp09/Code/C*/compiler/src/tokenizer/tokenizer.c" -o CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/olivergp09/Code/C-Star/compiler/src/tokenizer/tokenizer.c -o CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.s
 
 CMakeFiles/csc.dir/src/parser/parser.c.o: CMakeFiles/csc.dir/flags.make
-CMakeFiles/csc.dir/src/parser/parser.c.o: /home/olivergp09/Code/C*/compiler/src/parser/parser.c
+CMakeFiles/csc.dir/src/parser/parser.c.o: /home/olivergp09/Code/C-Star/compiler/src/parser/parser.c
 CMakeFiles/csc.dir/src/parser/parser.c.o: CMakeFiles/csc.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/home/olivergp09/Code/C*/compiler/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/csc.dir/src/parser/parser.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/parser/parser.c.o -MF CMakeFiles/csc.dir/src/parser/parser.c.o.d -o CMakeFiles/csc.dir/src/parser/parser.c.o -c "/home/olivergp09/Code/C*/compiler/src/parser/parser.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/olivergp09/Code/C-Star/compiler/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building C object CMakeFiles/csc.dir/src/parser/parser.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/parser/parser.c.o -MF CMakeFiles/csc.dir/src/parser/parser.c.o.d -o CMakeFiles/csc.dir/src/parser/parser.c.o -c /home/olivergp09/Code/C-Star/compiler/src/parser/parser.c
 
 CMakeFiles/csc.dir/src/parser/parser.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/csc.dir/src/parser/parser.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/olivergp09/Code/C*/compiler/src/parser/parser.c" > CMakeFiles/csc.dir/src/parser/parser.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/olivergp09/Code/C-Star/compiler/src/parser/parser.c > CMakeFiles/csc.dir/src/parser/parser.c.i
 
 CMakeFiles/csc.dir/src/parser/parser.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/csc.dir/src/parser/parser.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/olivergp09/Code/C*/compiler/src/parser/parser.c" -o CMakeFiles/csc.dir/src/parser/parser.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/olivergp09/Code/C-Star/compiler/src/parser/parser.c -o CMakeFiles/csc.dir/src/parser/parser.c.s
 
 CMakeFiles/csc.dir/src/generation/generation.c.o: CMakeFiles/csc.dir/flags.make
-CMakeFiles/csc.dir/src/generation/generation.c.o: /home/olivergp09/Code/C*/compiler/src/generation/generation.c
+CMakeFiles/csc.dir/src/generation/generation.c.o: /home/olivergp09/Code/C-Star/compiler/src/generation/generation.c
 CMakeFiles/csc.dir/src/generation/generation.c.o: CMakeFiles/csc.dir/compiler_depend.ts
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir="/home/olivergp09/Code/C*/compiler/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/csc.dir/src/generation/generation.c.o"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/generation/generation.c.o -MF CMakeFiles/csc.dir/src/generation/generation.c.o.d -o CMakeFiles/csc.dir/src/generation/generation.c.o -c "/home/olivergp09/Code/C*/compiler/src/generation/generation.c"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=/home/olivergp09/Code/C-Star/compiler/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building C object CMakeFiles/csc.dir/src/generation/generation.c.o"
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -MD -MT CMakeFiles/csc.dir/src/generation/generation.c.o -MF CMakeFiles/csc.dir/src/generation/generation.c.o.d -o CMakeFiles/csc.dir/src/generation/generation.c.o -c /home/olivergp09/Code/C-Star/compiler/src/generation/generation.c
 
 CMakeFiles/csc.dir/src/generation/generation.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing C source to CMakeFiles/csc.dir/src/generation/generation.c.i"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E "/home/olivergp09/Code/C*/compiler/src/generation/generation.c" > CMakeFiles/csc.dir/src/generation/generation.c.i
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/olivergp09/Code/C-Star/compiler/src/generation/generation.c > CMakeFiles/csc.dir/src/generation/generation.c.i
 
 CMakeFiles/csc.dir/src/generation/generation.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling C source to assembly CMakeFiles/csc.dir/src/generation/generation.c.s"
-	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S "/home/olivergp09/Code/C*/compiler/src/generation/generation.c" -o CMakeFiles/csc.dir/src/generation/generation.c.s
+	/usr/bin/cc $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/olivergp09/Code/C-Star/compiler/src/generation/generation.c -o CMakeFiles/csc.dir/src/generation/generation.c.s
 
 # Object files for target csc
 csc_OBJECTS = \
@@ -141,7 +141,7 @@ csc: CMakeFiles/csc.dir/src/parser/parser.c.o
 csc: CMakeFiles/csc.dir/src/generation/generation.c.o
 csc: CMakeFiles/csc.dir/build.make
 csc: CMakeFiles/csc.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir="/home/olivergp09/Code/C*/compiler/build/CMakeFiles" --progress-num=$(CMAKE_PROGRESS_5) "Linking C executable csc"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/home/olivergp09/Code/C-Star/compiler/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Linking C executable csc"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/csc.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -153,6 +153,6 @@ CMakeFiles/csc.dir/clean:
 .PHONY : CMakeFiles/csc.dir/clean
 
 CMakeFiles/csc.dir/depend:
-	cd "/home/olivergp09/Code/C*/compiler/build" && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" "/home/olivergp09/Code/C*/compiler" "/home/olivergp09/Code/C*/compiler" "/home/olivergp09/Code/C*/compiler/build" "/home/olivergp09/Code/C*/compiler/build" "/home/olivergp09/Code/C*/compiler/build/CMakeFiles/csc.dir/DependInfo.cmake" "--color=$(COLOR)"
+	cd /home/olivergp09/Code/C-Star/compiler/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/olivergp09/Code/C-Star/compiler /home/olivergp09/Code/C-Star/compiler /home/olivergp09/Code/C-Star/compiler/build /home/olivergp09/Code/C-Star/compiler/build /home/olivergp09/Code/C-Star/compiler/build/CMakeFiles/csc.dir/DependInfo.cmake "--color=$(COLOR)"
 .PHONY : CMakeFiles/csc.dir/depend
 
