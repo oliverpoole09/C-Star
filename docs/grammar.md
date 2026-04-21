@@ -1,43 +1,84 @@
 $$
 \begin{aligned}
-\\
-[\text{prog}] &\to 
-[\text{stmt}]^*
-\\
-[\text{stmt}] &\to
+\text{Node} &\to
 \begin{cases}
-\text{exit}([\text{expr}]);
+\text{NodeType}
 \\
-\text{dat_type} \space \text{ident} = [\text{expr}];
+\text{NodeData}
+\\
 \end{cases}
 \\
-[\text{exit}] &\to exit(\text{[expr]});
 \\
-[\text{expr}] &\to
+\text{NodeType} &\to
 \begin{cases}
-\text{int_lit}
+node\_exit
 \\
-\text{ident}
+node\_var\_decl
+\\
 \end{cases}
 \\
-[\text{dat_type}] &\to
+\\
+\text{NodeData} &\to
 \begin{cases}
-\text{byte}
+\text{ExitNode}
 \\
-\text{int}
+\text{VarDeclNode}
 \\
-\text{long}
+\end{cases}
 \\
-\text{float}
 \\
-\text{double}
+\text{ExitNode} &\to
+\text{ExprNode}
 \\
-\text{bool}
 \\
-\text{char}
+\text{VarDeclNode} &\to
+\begin{cases}
+\text{DataType}
 \\
-\text{string}
+identifier\text{ Token}
 \\
+\text{ExprNode}
+\end{cases}
+\\
+\\
+\text{ExprNode} &\to
+\begin{cases}
+\text{ExprType}
+\\
+\text{ExprData}
+\\
+\end{cases}
+\\
+\\
+\text{ExprType} &\to
+\begin{cases}
+expr\_int\_lit
+\\
+expr\_var
+\\
+\end{cases}
+\\
+\\
+\text{ExprData} &\to
+\begin{cases}
+\text{IntLiteralExpr}
+\\
+\text{VarExpr}
+\\
+\end{cases}
+\\
+\\
+\text{IntLiteralExpr} &\to
+value\space(\text{int})
+\\
+\\
+\text{VarExpr} &\to
+identifier\text{ Token}
+\\
+\\
+\text{DataType} &\to
+\begin{cases}
+data\_int
 \end{cases}
 \end{aligned}
 $$
