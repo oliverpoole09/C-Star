@@ -1,0 +1,1 @@
+/usr/bin/cc CMakeFiles/csc.dir/src/main.c.o CMakeFiles/csc.dir/src/tokenizer/tokenizer.c.o CMakeFiles/csc.dir/src/parser/parser.c.o CMakeFiles/csc.dir/src/generation/generation.c.o -o csc 
