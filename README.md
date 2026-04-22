@@ -89,12 +89,6 @@ C* supports the four fundamental arithmetic operations:
 | `*`      | Multiplication | `x * y`      |
 | `/`      | Division       | `x / y`      |
 
-Example:
-```cst
-var a = 10;
-var b = 3;
-var result = a + b * 2 - 1 / 1;
-```
 
 ---
 
