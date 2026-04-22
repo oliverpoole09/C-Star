@@ -6,7 +6,7 @@
             "type": "shell",
             "command": "cmake --build .",
             "options": {
-                "cwd": "${workspaceFolder}/compiler/build"
+                "cwd": "${workspaceFolder}/build"
             },
             "group": {
                 "kind": "build",
