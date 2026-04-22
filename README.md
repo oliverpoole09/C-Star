@@ -65,13 +65,13 @@ Source Code (.cst)
 
 ### Variables
 Declare and assign variables using `var`:
-```c
+```cst
 var x = 10;
 var name = 42;
 ```
 
 Reassign a variable after declaration:
-```c
+```cst
 x = 20;
 ```
 
