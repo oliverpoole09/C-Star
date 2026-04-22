@@ -29,11 +29,11 @@ Token *tokenize(const char *str, int *count) {
 
         char c = str[i]; // store current char in c
         // if current char is alphabetic (a letter)
-        if(isalpha(c)) {
+        if(isalpha(c) || c == '_') {
             buffer[buf_len++] = c; // push current char to buffer
             i++; // advance to the next char
             // while every char after is alphanumeric...
-            while(isalnum(str[i])) {
+            while(isalnum(str[i]) || str[i] == '_') {
                 buffer[buf_len++] = str[i]; // push char to buffer
                 i++; // advance to next char
             }
@@ -46,16 +46,16 @@ Token *tokenize(const char *str, int *count) {
                 buf_len = 0; // reset buf_len (kinda clearing the buffer, just starting over from the start again)
                 continue;
             }
-            // if chars/keyword in buffer == "exit"
+            // if chars/keyword in buffer == "int"
             else if(strcmp(buffer, "int") == 0) {
-                tokens[(*count)++] = (Token){.type = DT_INT, .value = NULL}; // push EXIT token into tokens buffer and increase count
+                tokens[(*count)++] = (Token){.type = DT_INT, .value = NULL}; // push DT_INT token into tokens buffer and increase count
                 buf_len = 0; // reset buf_len
                 continue;
             }
             // if chars/keyword in buffer doesn't match to anything, assume its a identifier
             else {
                 char *ident_name = malloc(strlen(buffer) + 1);
-                strcpy(ident_name, buffer);
+                strcpy(ident_name, buffer); // copy buffer into ident_name var
                 tokens[(*count)++] = (Token){.type = IDENT, .value = ident_name}; // push IDENT token into tokens buffer and increase count
                 buf_len = 0; // reset buf_len
                 continue;
@@ -92,6 +92,26 @@ Token *tokenize(const char *str, int *count) {
             tokens[(*count)++] = (Token){.type = EQUAL, .value = NULL}; // push EQUAL token into tokens buffer, inc count
             continue;
         }
+        // if current char is a plus sign
+        else if(c == '+') {
+            tokens[(*count)++] = (Token){.type = PLUS, .value = NULL}; // push PLUS token into tokens buffer, inc count
+            continue;
+        }
+        // if current char is a minus sign
+        else if(c == '-') {
+            tokens[(*count)++] = (Token){.type = MINUS, .value = NULL}; // push MINUS token into tokens buffer, inc count
+            continue;
+        }
+        // if current char is a star sign
+        else if(c == '*') {
+            tokens[(*count)++] = (Token){.type = STAR, .value = NULL}; // push STAR token into tokens buffer, inc count
+            continue;
+        }
+        // if current char is a slash sign
+        else if(c == '/') {
+            tokens[(*count)++] = (Token){.type = SLASH, .value = NULL}; // push SLASH token into tokens buffer, inc count
+            continue;
+        }
         // if current char is a space, ignore it
         else if(isspace(c)) {
             continue;
@@ -112,7 +132,7 @@ Token *tokenize(const char *str, int *count) {
 // print tokens function for debugging
 void print_tokens(Token *tokens) {
     const char *type_names[] = {
-        "EXIT", "INT_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL"
+        "EXIT", "INT_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH"
     };
 
     for (int i = 0; tokens[i].type != FILE_END; i++) {

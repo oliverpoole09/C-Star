@@ -15,6 +15,8 @@ node\_exit
 \\
 node\_var\_decl
 \\
+node\_reassign
+\\
 \end{cases}
 \\
 \\
@@ -24,11 +26,22 @@ node\_var\_decl
 \\
 \text{VarDeclNode}
 \\
+\text{ReAssignNode}
+\\
 \end{cases}
 \\
 \\
 \text{ExitNode} &\to
 \text{ExprNode}
+\\
+\\
+\text{ReAssignNode} &\to
+\begin{cases}
+identifier\space\text{Token}
+\\
+\text{ExprNode}
+\\
+\end{cases}
 \\
 \\
 \text{VarDeclNode} &\to
@@ -50,15 +63,6 @@ identifier\text{ Token}
 \end{cases}
 \\
 \\
-\text{ExprType} &\to
-\begin{cases}
-expr\_int\_lit
-\\
-expr\_var
-\\
-\end{cases}
-\\
-\\
 \text{ExprData} &\to
 \begin{cases}
 \text{IntLiteralExpr}
@@ -68,17 +72,51 @@ expr\_var
 \end{cases}
 \\
 \\
-\text{IntLiteralExpr} &\to
-value\space(\text{int})
+\text{BinOpExpr} &\to
+\begin{cases}
+\text{BinOp}
+\\
+*left\text{ ExprNode}
+\\
+*right\text{ ExprNode}
+\\
+\end{cases}
 \\
 \\
 \text{VarExpr} &\to
 identifier\text{ Token}
 \\
 \\
+\text{IntLiteralExpr} &\to
+value\space(\text{int})
+\\
+\\
+\text{ExprType} &\to
+\begin{cases}
+expr\_int\_lit
+\\
+expr\_var
+\\
+\end{cases}
+\\
+\\
 \text{DataType} &\to
 \begin{cases}
 data\_int
 \end{cases}
+\\
+\\
+\text{BinOp} &\to
+\begin{cases}
+op\_add
+\\
+op\_sub
+\\
+op\_mul
+\\
+op\_div
+\end{cases}
+\\
+\\
 \end{aligned}
 $$

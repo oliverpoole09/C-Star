@@ -11,6 +11,7 @@ typedef struct {
 
 static VarEntry var_table[256]; // static var table to hold variables
 static int var_count = 0; // holds amount of vars created
+static int stack_depth = 0; // tracks temporary pushes during expression evaluation
 
 // function for looking up variables in table
 static int lookup_var(const char *name) {
@@ -30,17 +31,52 @@ static int lookup_var(const char *name) {
 static void eval_expr(FILE *out, ExprNode expr) {
     // if expression is an integer literal
     if (expr.type == EXPR_INT_LIT) {
-        // load literal vaule directly into rax
+        // load literal value directly into rax
         fprintf(out, "    mov rax, %d\n", expr.data.int_lit.value);
     } 
     // if expression is a variable
     else if (expr.type == EXPR_VAR) {
         // find where variable is (how deep in the stack)
         int depth = lookup_var(expr.data.var.ident.value);
-        // calculate how many bytes above rsp the var sits
-        int offset = (var_count - depth) * 8;
+        // account for both variables above us and any temp pushes
+        int offset = (var_count - depth + stack_depth) * 8;
         // load vars value directly from the stack into rax
         fprintf(out, "    mov rax, [rsp + %d]\n", offset);
+    }
+    // if expression is a binary operation (+, -, *, /)
+    else if (expr.type == EXPR_BINOP) {
+        // evaluate left side, result lands in rax
+        eval_expr(out, *expr.data.bin_op.left);
+        // push rax to stack to save left side while we evaluate right side
+        fprintf(out, "    push rax\n");
+        stack_depth++; // temporary push, offsets shift by 8
+        // evaluate right side, result lands in rax
+        eval_expr(out, *expr.data.bin_op.right);
+        // move right side result into rbx
+        fprintf(out, "    mov rbx, rax\n");
+        // pop left side back into rax
+        fprintf(out, "    pop rax\n");
+        stack_depth--; // temporary pop, offsets shift back
+        // perform the operation
+        switch (expr.data.bin_op.op) {
+            // add rbx to rax
+            case OP_ADD:
+                fprintf(out, "    add rax, rbx\n");
+                break;
+            // subtract rbx from rax
+            case OP_SUB:
+                fprintf(out, "    sub rax, rbx\n");
+                break;
+            // multiply rax by rbx (result in rax)
+            case OP_MUL:
+                fprintf(out, "    imul rax, rbx\n");
+                break;
+            // divide rax by rbx (result in rax, remainder in rdx)
+            case OP_DIV:
+                fprintf(out, "    xor rdx, rdx\n"); // clear rdx before division
+                fprintf(out, "    idiv rbx\n");
+                break;
+        }
     }
 }
 
@@ -86,6 +122,15 @@ void generate(Node *nodes, int count, const char *filename) {
                 strncpy(var_table[var_count].name, nodes[i].data.var_decl.ident.value, 255);
                 var_table[var_count].depth = var_count + 1;
                 var_count++; // increase var_count
+                break;
+            // if node is a reassignment
+            case NODE_REASSIGN:
+                eval_expr(out, nodes[i].data.re_assign.expr); // evaluate expression and put in rax
+                // find where the variable is on the stack
+                int depth = lookup_var(nodes[i].data.re_assign.ident.value);
+                int offset = (var_count - depth) * 8;
+                // write rax back to the variable's stack slot
+                fprintf(out, "    mov [rsp + %d], rax\n", offset);
                 break;
             // if node is a exit function/command
             case NODE_EXIT: 

@@ -35,6 +35,11 @@ int main(int argc, char* argv[]) {
     Node *nodes = parse(tokens, token_count, &node_count); // parse tokens
     generate(nodes, node_count, argv[1]); // generate asm code from ast
 
+    //printf("----------Tokens----------\n\n");
+    //print_tokens(tokens);
+    //printf("\n----------Nodes----------\n\n");
+    //print_nodes(nodes, node_count);
+
     free(contents); // free contents (technically a buffer) otherwise memory leak
     free(tokens); // free tokens values (hidden on the heap) and tokens buffer
     free(nodes); // free node buffer

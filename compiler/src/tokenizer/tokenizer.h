@@ -11,7 +11,11 @@ typedef enum {
     FILE_END,
     DT_INT,
     IDENT,
-    EQUAL
+    EQUAL,
+    PLUS,
+    MINUS,
+    STAR,
+    SLASH
 } TokenType;
 
 // Struct of a Token
