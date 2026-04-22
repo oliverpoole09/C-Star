@@ -7,7 +7,7 @@
 </p>
 
 <h1 align="center">C*</h1>
-<p align="center"><i>A compiled language built from the ground up.</i></p>
+<p align="center"><i>A compiled language built from the ground up by Oliver Poole.</i></p>
 
 ---
 
