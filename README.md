@@ -28,7 +28,7 @@ Unlike interpreted languages (like Python), which are translated line-by-line at
 The C* compiler takes your source code through several stages to produce a runnable executable:
 
 ```
-Source Code (.cstar)
+Source Code (.cst)
         │
         ▼
   ┌───────────┐
@@ -65,13 +65,13 @@ Source Code (.cstar)
 
 ### Variables
 Declare and assign variables using `var`:
-```c
+```cst
 var x = 10;
 var name = 42;
 ```
 
 Reassign a variable after declaration:
-```c
+```cst
 x = 20;
 ```
 
@@ -88,7 +88,7 @@ C* supports the four fundamental arithmetic operations:
 | `/`      | Division       | `x / y`      |
 
 Example:
-```c
+```cst
 var a = 10;
 var b = 3;
 var result = a + b * 2 - 1 / 1;
@@ -98,7 +98,7 @@ var result = a + b * 2 - 1 / 1;
 
 ### Exit
 Terminate a program with a specific exit code using `exit()`:
-```c
+```cst
 exit(0);   // Success
 exit(1);   // Error
 ```
