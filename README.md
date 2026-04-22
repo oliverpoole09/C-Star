@@ -113,8 +113,6 @@ The exit code is returned to the operating system and can be used to signal succ
 
 > *This section is a work in progress — more coming soon!*
 
-- [ ] ...
-
 ---
 
 ## 🚀 Getting Started
