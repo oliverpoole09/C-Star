@@ -1,2 +1,2 @@
-int x = 1 + 2 * 4;
-exit(x);
+int x = 0;
+exit(0);
