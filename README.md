@@ -1,10 +1,6 @@
 <p align="center">
-  <a href="">
-    <img src="https://img.shields.io/badge/C*-Language-blue?style=for-the-badge&logo=c" />
-  <\a>
-  <a href="">
-    <img src="https://img.shields.io/badge/status-in%20development-orange?style=for-the-badge" />
-  </a>
+  <img src="https://img.shields.io/badge/C*-Language-blue?style=for-the-badge&logo=c" />
+  <img src="https://img.shields.io/badge/status-in%20development-orange?style=for-the-badge" />
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" />
   </a>
