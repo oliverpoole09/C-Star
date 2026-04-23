@@ -109,7 +109,30 @@ Token *tokenize(const char *str, int *count) {
         }
         // if current char is a slash sign
         else if(c == '/') {
-            tokens[(*count)++] = (Token){.type = SLASH, .value = NULL}; // push SLASH token into tokens buffer, inc count
+            // if next char is a slash aswell, it's a comment
+            if (str[i + 1] == '/') {
+                // keep ignoring and skipping forward while str isn't a newline char or a null-terminator
+                while (str[i] != '\n' && str[i] != '\0') {
+                    i++; // next token
+                }
+            }
+            // else if next char is a star, it's a multi-line comment
+            else if (str[i + 1] == '*') {
+                // keep ignoring and skipping forward until another */ is placed to end the multi-line comment
+                while (!(str[i] == '*' && str[i + 1] == '/')) {
+                    // if file ends before multi-line comment is closed, throw error
+                    if (str[i] == '\0') {
+                        fprintf(stderr, "Unclosed multi-line comment\n");
+                        exit(1);
+                    }
+                    i++; // next token
+                }
+                i += 2;
+            }
+            // else it's a regular slash token
+            else {
+                tokens[(*count)++] = (Token){.type = SLASH, .value = NULL}; // push SLASH token into tokens buffer, inc count
+            }
             continue;
         }
         // if current char is a space, ignore it

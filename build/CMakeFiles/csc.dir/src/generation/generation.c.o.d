@@ -1,9 +1,9 @@
 CMakeFiles/csc.dir/src/generation/generation.c.o: \
- /home/olivergp09/Code/C-Star/compiler/src/generation/generation.c \
+ /home/olivergp09/Code/C-Star/src/generation/generation.c \
  /usr/include/stdc-predef.h \
- /home/olivergp09/Code/C-Star/compiler/src/generation/generation.h \
- /home/olivergp09/Code/C-Star/compiler/src/generation/../parser/parser.h \
- /home/olivergp09/Code/C-Star/compiler/src/generation/../parser/../tokenizer/tokenizer.h \
+ /home/olivergp09/Code/C-Star/src/generation/generation.h \
+ /home/olivergp09/Code/C-Star/src/generation/../parser/parser.h \
+ /home/olivergp09/Code/C-Star/src/generation/../parser/../tokenizer/tokenizer.h \
  /usr/include/stdio.h \
  /usr/include/x86_64-linux-gnu/bits/libc-header-start.h \
  /usr/include/features.h /usr/include/features-time64.h \
