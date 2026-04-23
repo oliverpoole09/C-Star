@@ -43,13 +43,8 @@ Source Code (.cst)
   └───────────┘
         │
         ▼
-  ┌──────────────────┐
-  │ Semantic Analysis│  → Type checking, scope resolution, validation
-  └──────────────────┘
-        │
-        ▼
   ┌───────────────────┐
-  │  Code Generation  │  → Outputs machine code or intermediate representation
+  │  Code Generation  │  → Outputs machine code/assembly code
   └───────────────────┘
         │
         ▼
