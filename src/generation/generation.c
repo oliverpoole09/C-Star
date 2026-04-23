@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-// VarEntry Structure (Holds var name and depth in stack)
+// VarEntry Structure (holds var name and depth in stack)
 typedef struct {
     char name[256];
     int depth;

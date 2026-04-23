@@ -69,6 +69,8 @@ identifier\text{ Token}
 \\
 \text{VarExpr}
 \\
+\text{BinOpExpr}
+\\
 \end{cases}
 \\
 \\
@@ -76,9 +78,9 @@ identifier\text{ Token}
 \begin{cases}
 \text{BinOp}
 \\
-*left\text{ ExprNode}
+left\text{ ExprNode}
 \\
-*right\text{ ExprNode}
+right\text{ ExprNode}
 \\
 \end{cases}
 \\
@@ -96,6 +98,8 @@ value\space(\text{int})
 expr\_int\_lit
 \\
 expr\_var
+\\
+expr\_binop
 \\
 \end{cases}
 \\

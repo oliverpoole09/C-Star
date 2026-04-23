@@ -184,10 +184,18 @@ static void print_expr(ExprNode expr) {
         printf("BinOp(");
         print_expr(*expr.data.bin_op.left);
         switch (expr.data.bin_op.op) {
-            case OP_ADD: printf(" + "); break;
-            case OP_SUB: printf(" - "); break;
-            case OP_MUL: printf(" * "); break;
-            case OP_DIV: printf(" / "); break;
+            case OP_ADD: 
+                printf(" + "); 
+                break;
+            case OP_SUB: 
+                printf(" - "); 
+                break;
+            case OP_MUL: 
+                printf(" * "); 
+                break;
+            case OP_DIV: 
+                printf(" / "); 
+                break;
         }
         print_expr(*expr.data.bin_op.right);
         printf(")");
