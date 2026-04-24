@@ -28,8 +28,27 @@ Token *tokenize(const char *str, int *count) {
         }
 
         char c = str[i]; // store current char in c
+        // if current char is 'f' and next is a quote
+        if (c == 'f' && str[i + 1] == '"') {
+            i += 2; // skip f and opening quote
+            // collect everything until closing quote
+            while (str[i] != '"' && str[i] != '\0') {
+                // handle escape sequences
+                if (str[i] == '\\' && str[i + 1] == 'n') {
+                    buffer[buf_len++] = '\n';
+                    i += 2;
+                } 
+                else {
+                    buffer[buf_len++] = str[i++];
+                }
+            }
+            buffer[buf_len] = '\0'; // add null terminator
+            tokens[(*count)++] = (Token){.type = FSTR_LIT, .value = strdup(buffer)}; // push FSTR_LIT token into tokens buffer with value from buffer, inc count
+            buf_len = 0;
+            continue; // str[i] is on closing quote, outer i++ skips it
+        }
         // if current char is alphabetic (a letter)
-        if(isalpha(c) || c == '_') {
+        else if(isalpha(c) || c == '_') {
             buffer[buf_len++] = c; // push current char to buffer
             i++; // advance to the next char
             // while every char after is alphanumeric...
@@ -171,7 +190,7 @@ Token *tokenize(const char *str, int *count) {
                 }
             }
             buffer[buf_len] = '\0'; // add null-terminator to end of string
-            tokens[(*count)++] = (Token){.type = STR_LIT, .value = strdup(buffer)};
+            tokens[(*count)++] = (Token){.type = STR_LIT, .value = strdup(buffer)}; // push STR_LIT token into tokens buffer with value from buffer, inc count
             buf_len = 0;
             continue; // str[i] is now on the closing quote, outer i++ skips it
         }
@@ -195,7 +214,7 @@ Token *tokenize(const char *str, int *count) {
 // print tokens function for debugging
 void print_tokens(Token *tokens) {
     const char *type_names[] = {
-        "INT_LIT", "STR_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH", "LEFT_CURL", "RIGHT_CURL", "COMMA", "RETURN"
+        "INT_LIT", "STR_LIT", "FSTR_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH", "LEFT_CURL", "RIGHT_CURL", "COMMA", "RETURN"
     };
 
     for (int i = 0; tokens[i].type != FILE_END; i++) {

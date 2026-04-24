@@ -1,6 +1,7 @@
-int x = 42;
-write(stdout, x);
-write(stdout, "\n");
-write(stdout, 123);
-write(stdout, "\n");
-exit(0);
+int main() {
+    int x = 10;
+    int y = 4;
+    int sum = x + y;
+    write(stdout, f"{sum}\n");
+    return 0;
+}

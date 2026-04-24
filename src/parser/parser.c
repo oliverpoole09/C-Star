@@ -41,6 +41,68 @@ static ExprNode parse_primary(Token *tokens, int *i) {
         // return ExprNode with EXPR_STR_LIT type and a str_lit value of (val)
         return (ExprNode){.type = EXPR_STR_LIT, .data.str_lit = (StrLiteralExpr){.value = val}};
     }
+    // if current token type is a f-string
+    else if (tokens[*i].type == FSTR_LIT) {
+        char *raw = tokens[*i].value; // raw f-string content
+        (*i)++; // next token
+        FStrExpr fstr; // create FStrExpr
+        fstr.part_count = 0; // keep track of how many parts there are in the fstring
+
+        char seg[1024]; // buffer for current string segment
+        int seg_len = 0; // set current string segment length
+
+        while (*raw) {
+            // if we hit a '{', end current string segment and parse expression
+            if (*raw == '{') {
+                // flush current string segment if non-empty
+                if (seg_len > 0) {
+                    seg[seg_len] = '\0'; // add null-terminator
+                    FStrPart part; // create FStrPart
+                    part.type = FSTR_STR; // part is a str
+                    part.str = strdup(seg); // dump string
+                    part.expr = NULL; // no expression
+                    fstr.parts[fstr.part_count++] = part; // increase part count
+                    seg_len = 0; // reset segment len
+                }
+                raw++; // skip '{'
+                // collect identifier inside braces
+                char ident[256]; // buffer for identifier
+                int ident_len = 0; // count indent char length
+                // keep adding ident chars until }
+                while (*raw && *raw != '}') {
+                    ident[ident_len++] = *raw++;
+                }
+                ident[ident_len] = '\0'; // add null-terminator
+                raw++; // skip '}'
+                // create a VAR expression for the identifier
+                Token t; // create new token
+                t.type = IDENT; // token is an ident
+                t.value = strdup(ident); // dump ident into value
+                ExprNode *expr = malloc(sizeof(ExprNode)); // create buffer with size of ExprNode
+                *expr = (ExprNode){.type = EXPR_VAR, .data.var = (VarExpr){.ident = t}}; // put ident var into expr
+                FStrPart part; // create new FStrPart
+                part.type = FSTR_EXPR; // type is expression
+                part.str = NULL; // no string
+                part.expr = expr; // set expr
+                fstr.parts[fstr.part_count++] = part; // increase part count
+            }
+            // otherwise accumulate into current string segment
+            else {
+                seg[seg_len++] = *raw++;
+            }
+        }
+        // flush any remaining string segment
+        if (seg_len > 0) {
+            seg[seg_len] = '\0'; // add null-terminator
+            FStrPart part; // create FStrPart
+            part.type = FSTR_STR; // part is a string
+            part.str = strdup(seg); // dump string
+            part.expr = NULL; // no expression
+            fstr.parts[fstr.part_count++] = part; // increase part count
+        }
+
+        return (ExprNode){.type = EXPR_FSTR, .data.fstr = fstr}; // return ExprNode with type of F-String
+    }
     // else if current token is an identifier
     else if (tokens[*i].type == IDENT) {
         // if next token is a left paren, it's a function call inside an expression
@@ -282,6 +344,18 @@ static void print_expr(ExprNode expr) {
         printf("IntLiteral(%d)", expr.data.int_lit.value);
     else if (expr.type == EXPR_STR_LIT)
         printf("StrLiteral(%s)", expr.data.str_lit.value);
+    else if (expr.type == EXPR_FSTR) {
+        printf("FStr(");
+        for (int i = 0; i < expr.data.fstr.part_count; i++) {
+            if (expr.data.fstr.parts[i].type == FSTR_STR)
+                printf("Str(%s)", expr.data.fstr.parts[i].str);
+            else
+                printf("Expr(");
+                print_expr(*expr.data.fstr.parts[i].expr);
+                printf(")");
+        }
+        printf(")");
+    }
     else if (expr.type == EXPR_VAR)
         printf("Var(%s)", expr.data.var.ident.value);
     else if (expr.type == EXPR_BINOP) {

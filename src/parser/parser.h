@@ -26,10 +26,30 @@ typedef enum {
 typedef enum {
     EXPR_INT_LIT,
     EXPR_STR_LIT,
+    EXPR_FSTR,
     EXPR_VAR,
     EXPR_BINOP,
     EXPR_FUNC_CALL
 } ExprType;
+
+// F-String Part Types
+typedef enum {
+    FSTR_STR,
+    FSTR_EXPR
+} FStrPartType;
+
+// F-String Part Structure (either a string segment or an expression)
+typedef struct {
+    FStrPartType type;
+    char *str;
+    ExprNode *expr;
+} FStrPart;
+
+// F-String Expression Structure
+typedef struct {
+    FStrPart parts[64];
+    int part_count;
+} FStrExpr;
 
 // Integer Literal Expression Structure
 typedef struct {
@@ -70,6 +90,7 @@ typedef struct {
 typedef union {
     IntLiteralExpr int_lit;
     StrLiteralExpr str_lit;
+    FStrExpr fstr;
     VarExpr var;
     BinOpExpr bin_op;
     FuncCallNode func_call;

@@ -5,6 +5,7 @@
 typedef enum {
     INT_LIT,
     STR_LIT,
+    FSTR_LIT,
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
