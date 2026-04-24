@@ -43,13 +43,8 @@ Source Code (.cst)
   └───────────┘
         │
         ▼
-  ┌──────────────────┐
-  │ Semantic Analysis│  → Type checking, scope resolution, validation
-  └──────────────────┘
-        │
-        ▼
   ┌───────────────────┐
-  │  Code Generation  │  → Outputs machine code or intermediate representation
+  │  Code Generation  │  → Outputs machine code/assembly code
   └───────────────────┘
         │
         ▼
@@ -68,13 +63,13 @@ Source Code (.cst)
 ### Variables
 Declare and assign variables using `var`:
 ```cst
-var x = 10;
-var name = 42;
+var x = 10; // int var 'x' with value 10
+var name = 42; // int var 'name' with value 42
 ```
 
 Reassign a variable after declaration:
 ```cst
-x = 20;
+x = 20; // reassign var 'x' with value 20
 ```
 
 ---
@@ -95,11 +90,28 @@ C* supports the four fundamental arithmetic operations:
 ### Exit
 Terminate a program with a specific exit code using `exit()`:
 ```cst
-exit(0);   // Success
-exit(1);   // Error
+exit(0); // Success
+exit(1); // Error
 ```
 
 The exit code is returned to the operating system and can be used to signal success or failure to other programs or scripts.
+
+---
+
+### Functions
+You can declare functions in cst like this:
+```cst
+// creates add() function with args (x, y)
+int add(int x, int y) {
+    return x + y; // return x + y
+}
+```
+
+You can call created functions in cst like this:
+```cst
+int sum = add(1, 8); // returns 1 + 8 (9)
+int sum = add(4, 2); // returns 4 + 2 (6)
+```
 
 ---
 
