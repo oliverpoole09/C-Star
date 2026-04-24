@@ -3,13 +3,14 @@
 
 // Enum of all TokenTypes that are avalible
 typedef enum {
-    EXIT,
     INT_LIT,
+    STR_LIT,
     SEMICOLON,
     LEFT_PAREN,
     RIGHT_PAREN,
     FILE_END,
     DT_INT,
+    DT_STR,
     IDENT,
     EQUAL,
     PLUS,

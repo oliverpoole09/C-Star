@@ -15,13 +15,22 @@ typedef struct {
     int rbp_offset;
 } ParamEntry;
 
-static VarEntry var_table[256]; // static var table to hold variables
-static int var_count = 0; // holds amount of vars created
+// StrEntry Structure (holds string label and its value for data section)
+typedef struct {
+    char label[32];   // e.g. str0, str1
+    char value[1024]; // the actual string content
+} StrEntry;
+
+static VarEntry var_table[256]; // table of all vars
+static int var_count = 0; // holds amount of vars
 static int stack_depth = 0; // tracks temporary pushes during expression evaluation
 
 static ParamEntry param_table[64]; // param table for current function
 static int param_count = 0; // holds amount of params in current function
 static int in_function = 0; // tracks if we are inside a function
+
+static StrEntry str_table[256]; // table of all string literals
+static int str_count = 0; // holds amount of string literals
 
 // function for looking up variables in table
 static int lookup_var(const char *name) {
@@ -46,9 +55,87 @@ static int lookup_param(const char *name) {
     return -1; // not found
 }
 
+// register a string literal in the string table, returns its label index
+static int register_string(const char *value) {
+    // check if string is already registered to avoid duplicates
+    for (int i = 0; i < str_count; i++) {
+        if (strcmp(str_table[i].value, value) == 0) {
+            return i;
+        }
+    }
+    // register new string
+    snprintf(str_table[str_count].label, sizeof(str_table[str_count].label), "str%d", str_count);
+    strncpy(str_table[str_count].value, value, sizeof(str_table[str_count].value) - 1);
+    return str_count++;
+}
+
 // forward declarations
 static void emit_func_call(FILE *out, FuncCallNode call);
 static void emit_nodes(FILE *out, Node *nodes, int count, int *has_exit);
+
+// collect all string literals from an expression into the string table
+static void collect_strings_expr(ExprNode expr) {
+    if (expr.type == EXPR_STR_LIT) {
+        register_string(expr.data.str_lit.value);
+    } 
+    else if (expr.type == EXPR_BINOP) {
+        collect_strings_expr(*expr.data.bin_op.left);
+        collect_strings_expr(*expr.data.bin_op.right);
+    } 
+    else if (expr.type == EXPR_FUNC_CALL) {
+        for (int i = 0; i < expr.data.func_call.arg_count; i++) {
+            collect_strings_expr(expr.data.func_call.args[i]);
+        }
+    }
+}
+
+// collect all string literals from a node list into the string table
+static void collect_strings(Node *nodes, int count) {
+    for (int i = 0; i < count; i++) {
+        switch (nodes[i].type) {
+            case NODE_VAR_DECL:
+                collect_strings_expr(nodes[i].data.var_decl.expr);
+                break;
+            case NODE_REASSIGN:
+                collect_strings_expr(nodes[i].data.re_assign.expr);
+                break;
+            case NODE_FUNC_CALL:
+                for (int j = 0; j < nodes[i].data.func_call.arg_count; j++)
+                    collect_strings_expr(nodes[i].data.func_call.args[j]);
+                break;
+            case NODE_RETURN:
+                collect_strings_expr(nodes[i].data.ret.expr);
+                break;
+            case NODE_FUNC_DEF:
+                collect_strings(nodes[i].data.func_def.body, nodes[i].data.func_def.body_count);
+                break;
+            default:
+                break;
+        }
+    }
+}
+
+// emit the section .data block with all registered strings
+static void emit_data_section(FILE *out) {
+    if (str_count == 0) return; // no strings, skip section
+    fprintf(out, "section .data\n");
+    for (int i = 0; i < str_count; i++) {
+        // emit each byte of the string manually to handle escape chars
+        fprintf(out, "    %s db ", str_table[i].label);
+        const char *s = str_table[i].value;
+        int first = 1;
+        while (*s) {
+            if (!first) fprintf(out, ", ");
+            // emit raw byte value
+            fprintf(out, "%d", (unsigned char)*s);
+            s++;
+            first = 0;
+        }
+        fprintf(out, ", 0\n"); // null terminator
+        // emit length constant (excludes null terminator)
+        fprintf(out, "    %s_len equ $ - %s - 1\n", str_table[i].label, str_table[i].label);
+    }
+}
 
 // function to evaluate expression and put result in rax
 static void eval_expr(FILE *out, ExprNode expr) {
@@ -56,6 +143,13 @@ static void eval_expr(FILE *out, ExprNode expr) {
     if (expr.type == EXPR_INT_LIT) {
         // load literal value directly into rax
         fprintf(out, "    mov rax, %d\n", expr.data.int_lit.value);
+    }
+    // if expression is a string literal
+    else if (expr.type == EXPR_STR_LIT) {
+        // find the string's label in the string table
+        int idx = register_string(expr.data.str_lit.value);
+        // load address of string label into rax
+        fprintf(out, "    mov rax, %s\n", str_table[idx].label);
     }
     // if expression is a variable
     else if (expr.type == EXPR_VAR) {
@@ -117,6 +211,59 @@ static void eval_expr(FILE *out, ExprNode expr) {
 
 // emit a function call (push args right to left, call, clean up stack)
 static void emit_func_call(FILE *out, FuncCallNode call) {
+    // built in function: exit(exit_code);
+    if (strcmp(call.ident.value, "exit") == 0) {
+        eval_expr(out, call.args[0]); // evaluate exit code into rax
+        fprintf(out, "    mov rdi, rax\n");
+        fprintf(out, "    mov rax, 60\n");
+        fprintf(out, "    syscall\n");
+        return;
+    }
+
+    // built in function: write(std, str);
+    if (strcmp(call.ident.value, "write") == 0) {
+        // first arg is stdout or stderr identifier
+        ExprNode fd_expr = call.args[0];
+        int fd = 1; // default to stdout
+        if (fd_expr.type == EXPR_VAR) {
+            if (strcmp(fd_expr.data.var.ident.value, "stderr") == 0) {
+                fd = 2; // stderr
+            }
+        }
+
+        // second arg is the string expression
+        ExprNode str_expr = call.args[1];
+
+        // if string is a literal, use its label and length directly
+        if (str_expr.type == EXPR_STR_LIT) {
+            int idx = register_string(str_expr.data.str_lit.value);
+            fprintf(out, "    mov rax, 1\n"); // write syscall
+            fprintf(out, "    mov rdi, %d\n", fd); // file descriptor
+            fprintf(out, "    mov rsi, %s\n", str_table[idx].label); // string pointer
+            fprintf(out, "    mov rdx, %s_len\n", str_table[idx].label); // string length
+            fprintf(out, "    syscall\n");
+        }
+        // if string is a variable, load pointer from stack and calculate length
+        else if (str_expr.type == EXPR_VAR) {
+            eval_expr(out, str_expr); // load string pointer into rax
+            fprintf(out, "    mov rsi, rax\n"); // string pointer
+            // calculate length using a loop (we don't know it at compile time)
+            fprintf(out, "    mov rdx, 0\n"); // length counter
+            fprintf(out, "    mov rcx, rsi\n"); // copy pointer
+            fprintf(out, ".strlen_loop:\n");
+            fprintf(out, "    cmp byte [rcx], 0\n"); // check for null terminator
+            fprintf(out, "    je .strlen_done\n");
+            fprintf(out, "    inc rdx\n"); // increment length
+            fprintf(out, "    inc rcx\n"); // advance pointer
+            fprintf(out, "    jmp .strlen_loop\n");
+            fprintf(out, ".strlen_done:\n");
+            fprintf(out, "    mov rax, 1\n"); // write syscall
+            fprintf(out, "    mov rdi, %d\n", fd); // file descriptor
+            fprintf(out, "    syscall\n");
+        }
+        return;
+    }
+
     // push arguments onto stack in reverse order (right to left)
     for (int i = call.arg_count - 1; i >= 0; i--) {
         eval_expr(out, call.args[i]); // evaluate arg into rax
@@ -125,8 +272,9 @@ static void emit_func_call(FILE *out, FuncCallNode call) {
     // call the function
     fprintf(out, "    call %s\n", call.ident.value);
     // clean up args from stack (each arg is 8 bytes)
-    if (call.arg_count > 0)
+    if (call.arg_count > 0) {
         fprintf(out, "    add rsp, %d\n", call.arg_count * 8);
+    }
     // result is now in rax
 }
 
@@ -202,15 +350,6 @@ static void emit_nodes(FILE *out, Node *nodes, int count, int *has_exit) {
             case NODE_FUNC_CALL:
                 emit_func_call(out, nodes[i].data.func_call); // emit call, result in rax
                 break;
-            // if node is an exit statement
-            case NODE_EXIT:
-                eval_expr(out, nodes[i].data.exit.expr); // evaluate expression and put in rax
-                // call exit syscall with expression in exit code
-                fprintf(out, "    mov rdi, rax\n");
-                fprintf(out, "    mov rax, 60\n");
-                fprintf(out, "    syscall\n");
-                if (has_exit) *has_exit = 1; // mark that we have an exit
-                break;
             // if node is a return statement
             case NODE_RETURN:
                 if (!in_function) {
@@ -235,9 +374,7 @@ void generate(Node *nodes, int count, const char *filename) {
     char base_name[256];
     strncpy(base_name, base, sizeof(base_name));
     char *dot = strrchr(base_name, '.');
-    if (dot) {
-        *dot = '\0'; // replace '.' with null terminator to cut off extension
-    }
+    if (dot) *dot = '\0'; // replace '.' with null terminator to cut off extension
 
     // build output file paths using base name
     char asm_path[512], obj_path[512], bin_path[512];
@@ -251,7 +388,14 @@ void generate(Node *nodes, int count, const char *filename) {
     // create and open temporary .asm file
     FILE *out = fopen(asm_path, "w");
 
-    // standard boilerplate asm start
+    // first pass: collect all string literals into the string table
+    collect_strings(nodes, count);
+
+    // emit section .data with all string literals
+    emit_data_section(out);
+
+    // emit section .text and _start
+    fprintf(out, "section .text\n");
     fprintf(out, "global _start\n");
     fprintf(out, "_start:\n");
 

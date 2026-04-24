@@ -4,17 +4,42 @@
 #include <string.h>
 #include <ctype.h>
 
+// returns 1 if token is a data type keyword, 0 otherwise
+static int is_data_type(TokenType type) {
+    return type == DT_INT || type == DT_STR;
+}
+
+// converts a TokenType to a DataType
+static DataType to_data_type(TokenType type) {
+    switch (type) {
+        case DT_INT: 
+            return DATA_INT;
+        case DT_STR: 
+            return DATA_STR;
+        default:
+            fprintf(stderr, "Unknown data type token\n");
+            exit(1);
+    }
+}
+
 // Parse Function Call (forward declaration so parse_primary can use it)
 FuncCallNode parse_func_call(Token *tokens, int *i, int consume_semicolon);
 
-// Parse Primary Function (Primary: Integer Lits, Identifier, Function Calls)
+// Parse Primary Function (Primary: Data Literals, Identifier, Function Calls, etc.)
 static ExprNode parse_primary(Token *tokens, int *i) {
-    // if current token type is an int_lit
+    // if current token type is an integer literal
     if (tokens[*i].type == INT_LIT) {
         int val = atoi(tokens[*i].value); // store token value in val
         (*i)++; // next token
         // return ExprNode with EXPR_INT_LIT type and a int_lit value of (val)
         return (ExprNode){.type = EXPR_INT_LIT, .data.int_lit = (IntLiteralExpr){.value = val}};
+    }
+    // if current token type is a string literal
+    else if (tokens[*i].type == STR_LIT) {
+        char *val = tokens[*i].value; // store string value
+        (*i)++; // next token
+        // return ExprNode with EXPR_STR_LIT type and a str_lit value of (val)
+        return (ExprNode){.type = EXPR_STR_LIT, .data.str_lit = (StrLiteralExpr){.value = val}};
     }
     // else if current token is an identifier
     else if (tokens[*i].type == IDENT) {
@@ -30,7 +55,7 @@ static ExprNode parse_primary(Token *tokens, int *i) {
     }
     // if no token type was found, throw error and quit
     else {
-        fprintf(stderr, "Expected expression (integer literal or identifier), got token type %d\n", tokens[*i].type);
+        fprintf(stderr, "Expected expression (integer literal, string literal, or identifier), got token type %d\n", tokens[*i].type);
         exit(1);
     }
 }
@@ -73,33 +98,9 @@ ExprNode parse_expr(Token *tokens, int *i) {
     return left;
 }
 
-// Parse Exit Function
-ExitNode parse_exit(Token *tokens, int *i) {
-    (*i)++; // skip exit token
-    // if no left parenthesis, throw error and quit
-    if (tokens[*i].type != LEFT_PAREN) {
-        fprintf(stderr, "Expected '(' after 'exit'\n");
-        exit(1);
-    }
-    (*i)++; // skip left parenthesis token
-    ExprNode expr = parse_expr(tokens, i); // parse expression
-    // if no right parenthesis, throw error and quit
-    if (tokens[*i].type != RIGHT_PAREN) {
-        fprintf(stderr, "Expected ')' after expression\n");
-        exit(1);
-    }
-    (*i)++; // skip right parenthesis token
-    // if no semicolon, throw error and quit
-    if (tokens[*i].type != SEMICOLON) {
-        fprintf(stderr, "Expected ';' after ')'\n");
-        exit(1);
-    }
-    (*i)++; // skip semicolon token
-    return (ExitNode){.expr = expr}; // return ExitNode with expression
-}
-
 // Parse Variable Decleration Function (Declare/Assign Vars)
 VarDeclNode parse_var_decl(Token *tokens, int *i) {
+    DataType data_type = to_data_type(tokens[*i].type); // read data type from token
     (*i)++; // skip data type token
     // if no identifier, throw error and quit
     if (tokens[*i].type != IDENT) {
@@ -121,7 +122,7 @@ VarDeclNode parse_var_decl(Token *tokens, int *i) {
     }
     (*i)++; // skip semicolon token
     // return VarDeclNode with data type, identifier, and expression
-    return (VarDeclNode){.data_type = DATA_INT, .ident = ident, .expr = expr};
+    return (VarDeclNode){.data_type = data_type, .ident = ident, .expr = expr};
 }
 
 // Parse Reassignment Function (Reassign Vars)
@@ -189,7 +190,8 @@ FuncCallNode parse_func_call(Token *tokens, int *i, int consume_semicolon) {
 // Parse Function Definition
 FuncDefNode parse_func_def(Token *tokens, int token_count, int *i) {
     int body_count = 0; // tracks amount of nodes in the body
-    (*i)++; // skip return type (DT_INT)
+    DataType return_type = to_data_type(tokens[*i].type); // read return type from token
+    (*i)++; // skip return type token
     Token ident = tokens[(*i)++]; // grab func name and advance forward
     (*i)++; // skip left paren token
 
@@ -198,9 +200,11 @@ FuncDefNode parse_func_def(Token *tokens, int token_count, int *i) {
     int param_count = 0; // keep track of params
     // while token is not a right parenthesis (end of params)
     while (tokens[*i].type != RIGHT_PAREN) {
-        (*i)++; // skip data_type
+        // read param data type
+        DataType param_type = to_data_type(tokens[*i].type);
+        (*i)++; // skip data type token
         // grab param ident and store param in params list
-        params[param_count++] = (Param){.data_type = DATA_INT, .ident = tokens[(*i)++]};
+        params[param_count++] = (Param){.data_type = param_type, .ident = tokens[(*i)++]};
         // if token is a comma, skip it
         if (tokens[*i].type == COMMA)
             (*i)++;
@@ -213,7 +217,7 @@ FuncDefNode parse_func_def(Token *tokens, int token_count, int *i) {
     (*i)++; // skip RIGHT_CURL
 
     FuncDefNode node; // create new FuncDefNode
-    node.return_type = DATA_INT; // add return type
+    node.return_type = return_type; // add return type
     node.ident = ident; // add identifier
     node.body = body; // add nodes in body
     node.body_count = body_count; // add amount of nodes in body
@@ -242,17 +246,13 @@ Node *parse(Token *tokens, int token_count, int *count, int *i, TokenType stop_t
             }
         }
 
-        // if current token is DT_INT and 2nd next is LEFT_PAREN, it's a function definition
-        if (tokens[*i].type == DT_INT && tokens[*i + 2].type == LEFT_PAREN) {
+        // if current token is a data type and 2nd next is LEFT_PAREN, it's a function definition
+        if (is_data_type(tokens[*i].type) && tokens[*i + 2].type == LEFT_PAREN) {
             nodes[(*count)++] = (Node){.type = NODE_FUNC_DEF, .data.func_def = parse_func_def(tokens, token_count, i)};
         }
-        // if current token is DT_INT, it's a variable declaration
-        else if (tokens[*i].type == DT_INT) {
+        // if current token is a data type, it's a variable declaration
+        else if (is_data_type(tokens[*i].type)) {
             nodes[(*count)++] = (Node){.type = NODE_VAR_DECL, .data.var_decl = parse_var_decl(tokens, i)};
-        }
-        // if current token is EXIT, it's an exit statement
-        else if (tokens[*i].type == EXIT) {
-            nodes[(*count)++] = (Node){.type = NODE_EXIT, .data.exit = parse_exit(tokens, i)};
         }
         // if current token is IDENT and next is LEFT_PAREN, it's a standalone function call
         else if (tokens[*i].type == IDENT && tokens[*i + 1].type == LEFT_PAREN) {
@@ -280,24 +280,18 @@ Node *parse(Token *tokens, int token_count, int *count, int *i, TokenType stop_t
 static void print_expr(ExprNode expr) {
     if (expr.type == EXPR_INT_LIT)
         printf("IntLiteral(%d)", expr.data.int_lit.value);
+    else if (expr.type == EXPR_STR_LIT)
+        printf("StrLiteral(%s)", expr.data.str_lit.value);
     else if (expr.type == EXPR_VAR)
         printf("Var(%s)", expr.data.var.ident.value);
     else if (expr.type == EXPR_BINOP) {
         printf("BinOp(");
         print_expr(*expr.data.bin_op.left);
         switch (expr.data.bin_op.op) {
-            case OP_ADD: 
-                printf(" + "); 
-                break;
-            case OP_SUB: 
-                printf(" - "); 
-                break;
-            case OP_MUL: 
-                printf(" * "); 
-                break;
-            case OP_DIV: 
-                printf(" / "); 
-                break;
+            case OP_ADD: printf(" + "); break;
+            case OP_SUB: printf(" - "); break;
+            case OP_MUL: printf(" * "); break;
+            case OP_DIV: printf(" / "); break;
         }
         print_expr(*expr.data.bin_op.right);
         printf(")");
@@ -317,13 +311,10 @@ static void print_expr(ExprNode expr) {
 void print_nodes(Node *nodes, int count) {
     for (int i = 0; i < count; i++) {
         switch (nodes[i].type) {
-            case NODE_EXIT:
-                printf("ExitNode { expr: ");
-                print_expr(nodes[i].data.exit.expr);
-                printf(" }\n");
-                break;
             case NODE_VAR_DECL:
-                printf("VarDeclNode { type: int, ident: %s, expr: ", nodes[i].data.var_decl.ident.value);
+                printf("VarDeclNode { type: %s, ident: %s, expr: ",
+                    nodes[i].data.var_decl.data_type == DATA_INT ? "int" : "str",
+                    nodes[i].data.var_decl.ident.value);
                 print_expr(nodes[i].data.var_decl.expr);
                 printf(" }\n");
                 break;
@@ -335,10 +326,11 @@ void print_nodes(Node *nodes, int count) {
             case NODE_FUNC_DEF:
                 printf("FuncDefNode { ident: %s, params: [", nodes[i].data.func_def.ident.value);
                 for (int j = 0; j < nodes[i].data.func_def.param_count; j++) {
-                    printf("%s", nodes[i].data.func_def.params[j].ident.value);
-                    if (j < nodes[i].data.func_def.param_count - 1) {
+                    printf("%s %s",
+                        nodes[i].data.func_def.params[j].data_type == DATA_INT ? "int" : "str",
+                        nodes[i].data.func_def.params[j].ident.value);
+                    if (j < nodes[i].data.func_def.param_count - 1)
                         printf(", ");
-                    }
                 }
                 printf("], body:\n");
                 print_nodes(nodes[i].data.func_def.body, nodes[i].data.func_def.body_count);
@@ -353,9 +345,8 @@ void print_nodes(Node *nodes, int count) {
                 printf("FuncCallNode { ident: %s, args: [", nodes[i].data.func_call.ident.value);
                 for (int j = 0; j < nodes[i].data.func_call.arg_count; j++) {
                     print_expr(nodes[i].data.func_call.args[j]);
-                    if (j < nodes[i].data.func_call.arg_count - 1) {
+                    if (j < nodes[i].data.func_call.arg_count - 1)
                         printf(", ");
-                    }
                 }
                 printf("] }\n");
                 break;

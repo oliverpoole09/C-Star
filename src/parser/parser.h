@@ -18,12 +18,14 @@ typedef enum {
 
 // Types of Data (Constants)
 typedef enum {
-    DATA_INT
+    DATA_INT,
+    DATA_STR
 } DataType;
 
 // Types of Expressions (Constants)
 typedef enum {
     EXPR_INT_LIT,
+    EXPR_STR_LIT,
     EXPR_VAR,
     EXPR_BINOP,
     EXPR_FUNC_CALL
@@ -33,6 +35,11 @@ typedef enum {
 typedef struct {
     int value;
 } IntLiteralExpr;
+
+// String Literal Expression Structure
+typedef struct {
+    char *value;
+} StrLiteralExpr;
 
 // Variable Expression Structure
 typedef struct {
@@ -62,6 +69,7 @@ typedef struct {
 // Types of data found in Expression Node
 typedef union {
     IntLiteralExpr int_lit;
+    StrLiteralExpr str_lit;
     VarExpr var;
     BinOpExpr bin_op;
     FuncCallNode func_call;
@@ -101,14 +109,8 @@ typedef struct {
     ExprNode expr;
 } ReAssignNode;
 
-// Exit Node Structure
-typedef struct {
-    ExprNode expr;
-} ExitNode;
-
 // Types of Data found in a Node
 typedef union {
-    ExitNode exit;
     VarDeclNode var_decl;
     ReAssignNode re_assign;
     FuncCallNode func_call;
@@ -118,7 +120,6 @@ typedef union {
 
 // Types of Nodes (Constants)
 typedef enum {
-    NODE_EXIT,
     NODE_VAR_DECL,
     NODE_REASSIGN,
     NODE_FUNC_DEF,
@@ -143,9 +144,6 @@ ReturnNode parse_return(Token *tokens, int *i);
 
 // Parse Expressions Function
 ExprNode parse_expr(Token *tokens, int *i);
-
-// Parse Exit Function
-ExitNode parse_exit(Token *tokens, int *i);
 
 // Parse Variable Decleration Function
 VarDeclNode parse_var_decl(Token *tokens, int *i);

@@ -40,15 +40,15 @@ Token *tokenize(const char *str, int *count) {
             i--; // go back a char (we end while loop with i++ so when we're done, we're 1 char ahead)
 
             buffer[buf_len] = '\0'; // end buffer with null terminator (so strcmp() knows where to stop in buffer)
-            // if chars/keyword in buffer == "exit"
-            if(strcmp(buffer, "exit") == 0) {
-                tokens[(*count)++] = (Token){.type = EXIT, .value = NULL}; // push EXIT token into tokens buffer and increase count
-                buf_len = 0; // reset buf_len (kinda clearing the buffer, just starting over from the start again)
+            // if chars/keyword in buffer == "int"
+            if(strcmp(buffer, "int") == 0) {
+                tokens[(*count)++] = (Token){.type = DT_INT, .value = NULL}; // push DT_INT token into tokens buffer and increase count
+                buf_len = 0; // reset buf_len
                 continue;
             }
-            // if chars/keyword in buffer == "int"
-            else if(strcmp(buffer, "int") == 0) {
-                tokens[(*count)++] = (Token){.type = DT_INT, .value = NULL}; // push DT_INT token into tokens buffer and increase count
+            // if chars/keyword in buffer == "str"
+            else if (strcmp(buffer, "str") == 0) {
+                tokens[(*count)++] = (Token){.type = DT_STR, .value = NULL}; // push DT_STR token into tokens buffer and increase count
                 buf_len = 0; // reset buf_len
                 continue;
             }
@@ -156,6 +156,25 @@ Token *tokenize(const char *str, int *count) {
             tokens[(*count)++] = (Token){.type = COMMA, .value = NULL}; // push COMMA token into tokens buffer, inc count
             continue;
         }
+        // if current char is a quote
+        else if (c == '"') {
+            i++; // skip opening quote
+            // collect every char until closing quote or end of file
+            while (str[i] != '"' && str[i] != '\0') {
+                // handle escape sequences
+                if (str[i] == '\\' && str[i + 1] == 'n') {
+                    buffer[buf_len++] = '\n';
+                    i += 2;
+                } 
+                else {
+                    buffer[buf_len++] = str[i++];
+                }
+            }
+            buffer[buf_len] = '\0'; // add null-terminator to end of string
+            tokens[(*count)++] = (Token){.type = STR_LIT, .value = strdup(buffer)};
+            buf_len = 0;
+            continue; // str[i] is now on the closing quote, outer i++ skips it
+        }
         // if current char is a space, ignore it
         else if(isspace(c)) {
             continue;
@@ -176,7 +195,7 @@ Token *tokenize(const char *str, int *count) {
 // print tokens function for debugging
 void print_tokens(Token *tokens) {
     const char *type_names[] = {
-        "EXIT", "INT_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH", "LEFT_CURL", "RIGHT_CURL", "COMMA", "RETURN"
+        "INT_LIT", "STR_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH", "LEFT_CURL", "RIGHT_CURL", "COMMA", "RETURN"
     };
 
     for (int i = 0; tokens[i].type != FILE_END; i++) {
