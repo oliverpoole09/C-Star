@@ -32,6 +32,8 @@ static int in_function = 0; // tracks if we are inside a function
 static StrEntry str_table[256]; // table of all string literals
 static int str_count = 0; // holds amount of string literals
 
+static int strlen_label_count = 0; // unique label counter for strlen loops
+
 // function for looking up variables in table
 static int lookup_var(const char *name) {
     // for every variable in table...
@@ -137,6 +139,68 @@ static void emit_data_section(FILE *out) {
     }
 }
 
+// emit the section .bss block for runtime buffers
+static void emit_bss_section(FILE *out) {
+    fprintf(out, "section .bss\n");
+    fprintf(out, "    __int_buf resb 32\n"); // buffer for int to string conversion (32 bytes fits any 64-bit int)
+}
+
+// emit the __int_to_str helper function
+// input: rdi = integer, rsi = buffer pointer
+// output: rdx = length of string written, rsi = buffer pointer
+static void emit_int_to_str_helper(FILE *out) {
+    fprintf(out, "__int_to_str:\n");
+    fprintf(out, "    push rbp\n");
+    fprintf(out, "    mov rbp, rsp\n");
+    fprintf(out, "    mov rax, rdi\n");       // number to convert
+    fprintf(out, "    mov rcx, rsi\n");       // buffer pointer
+    fprintf(out, "    xor r9, r9\n");         // digit count = 0
+
+    // handle 0 specially
+    fprintf(out, "    test rax, rax\n");
+    fprintf(out, "    jnz __its_convert\n");
+    fprintf(out, "    mov byte [rcx], 48\n"); // '0'
+    fprintf(out, "    mov rdx, 1\n");
+    fprintf(out, "    pop rbp\n");
+    fprintf(out, "    ret\n");
+
+    // extract digits in reverse order
+    fprintf(out, "__its_convert:\n");
+    fprintf(out, "    mov r8, rcx\n");        // save buffer start
+    fprintf(out, "__its_loop:\n");
+    fprintf(out, "    test rax, rax\n");
+    fprintf(out, "    jz __its_reverse\n");
+    fprintf(out, "    xor rdx, rdx\n");
+    fprintf(out, "    mov rbx, 10\n");
+    fprintf(out, "    div rbx\n");            // rax = quotient, rdx = remainder
+    fprintf(out, "    add dl, 48\n");         // convert remainder to ASCII digit
+    fprintf(out, "    mov [rcx], dl\n");      // store digit in buffer
+    fprintf(out, "    inc rcx\n");            // advance buffer pointer
+    fprintf(out, "    inc r9\n");             // increment digit count
+    fprintf(out, "    jmp __its_loop\n");
+
+    // reverse the digits in the buffer
+    fprintf(out, "__its_reverse:\n");
+    fprintf(out, "    mov r10, r8\n");        // start pointer
+    fprintf(out, "    dec rcx\n");            // end pointer
+    fprintf(out, "__its_rev_loop:\n");
+    fprintf(out, "    cmp r10, rcx\n");
+    fprintf(out, "    jge __its_done\n");
+    fprintf(out, "    mov al, [r10]\n");      // swap bytes at start and end
+    fprintf(out, "    mov bl, [rcx]\n");
+    fprintf(out, "    mov [r10], bl\n");
+    fprintf(out, "    mov [rcx], al\n");
+    fprintf(out, "    inc r10\n");            // move start pointer forward
+    fprintf(out, "    dec rcx\n");            // move end pointer backward
+    fprintf(out, "    jmp __its_rev_loop\n");
+
+    fprintf(out, "__its_done:\n");
+    fprintf(out, "    mov rdx, r9\n");        // return length in rdx
+    fprintf(out, "    mov rsi, r8\n");        // return buffer start in rsi
+    fprintf(out, "    pop rbp\n");
+    fprintf(out, "    ret\n");
+}
+
 // function to evaluate expression and put result in rax
 static void eval_expr(FILE *out, ExprNode expr) {
     // if expression is an integer literal
@@ -220,7 +284,7 @@ static void emit_func_call(FILE *out, FuncCallNode call) {
         return;
     }
 
-    // built in function: write(std, str);
+    // built in function: write(fd, value);
     if (strcmp(call.ident.value, "write") == 0) {
         // first arg is stdout or stderr identifier
         ExprNode fd_expr = call.args[0];
@@ -231,10 +295,10 @@ static void emit_func_call(FILE *out, FuncCallNode call) {
             }
         }
 
-        // second arg is the string expression
+        // second arg is the value to write
         ExprNode str_expr = call.args[1];
 
-        // if string is a literal, use its label and length directly
+        // if value is a string literal, use its label and length directly
         if (str_expr.type == EXPR_STR_LIT) {
             int idx = register_string(str_expr.data.str_lit.value);
             fprintf(out, "    mov rax, 1\n"); // write syscall
@@ -243,23 +307,63 @@ static void emit_func_call(FILE *out, FuncCallNode call) {
             fprintf(out, "    mov rdx, %s_len\n", str_table[idx].label); // string length
             fprintf(out, "    syscall\n");
         }
-        // if string is a variable, load pointer from stack and calculate length
-        else if (str_expr.type == EXPR_VAR) {
-            eval_expr(out, str_expr); // load string pointer into rax
-            fprintf(out, "    mov rsi, rax\n"); // string pointer
-            // calculate length using a loop (we don't know it at compile time)
-            fprintf(out, "    mov rdx, 0\n"); // length counter
-            fprintf(out, "    mov rcx, rsi\n"); // copy pointer
-            fprintf(out, ".strlen_loop:\n");
-            fprintf(out, "    cmp byte [rcx], 0\n"); // check for null terminator
-            fprintf(out, "    je .strlen_done\n");
-            fprintf(out, "    inc rdx\n"); // increment length
-            fprintf(out, "    inc rcx\n"); // advance pointer
-            fprintf(out, "    jmp .strlen_loop\n");
-            fprintf(out, ".strlen_done:\n");
+        // if value is an integer expression, convert to string first then write
+        else if (str_expr.type == EXPR_INT_LIT || str_expr.type == EXPR_BINOP) {
+            eval_expr(out, str_expr); // evaluate integer into rax
+            fprintf(out, "    mov rdi, rax\n"); // integer to convert
+            fprintf(out, "    mov rsi, __int_buf\n"); // buffer to write into
+            fprintf(out, "    call __int_to_str\n"); // rsi = buffer, rdx = length
             fprintf(out, "    mov rax, 1\n"); // write syscall
             fprintf(out, "    mov rdi, %d\n", fd); // file descriptor
             fprintf(out, "    syscall\n");
+        }
+        // if value is a variable, we need to determine its type at runtime
+        // for now load the pointer and compute length with strlen loop
+        else if (str_expr.type == EXPR_VAR) {
+            // try param table first to see if it might be an int param
+            int param_offset = lookup_param(str_expr.data.var.ident.value);
+            int is_int_var = 0;
+
+            // check if var is an int in var_table
+            for (int i = 0; i < var_count; i++) {
+                if (strcmp(var_table[i].name, str_expr.data.var.ident.value) == 0) {
+                    is_int_var = 1;
+                    break;
+                }
+            }
+            // check if param is an int
+            if (!is_int_var && in_function && param_offset != -1) {
+                is_int_var = 1;
+            }
+
+            if (is_int_var) {
+                // convert integer variable to string then write
+                eval_expr(out, str_expr); // load int into rax
+                fprintf(out, "    mov rdi, rax\n"); // integer to convert
+                fprintf(out, "    mov rsi, __int_buf\n"); // buffer
+                fprintf(out, "    call __int_to_str\n"); // rsi = buffer, rdx = length
+                fprintf(out, "    mov rax, 1\n"); // write syscall
+                fprintf(out, "    mov rdi, %d\n", fd); // file descriptor
+                fprintf(out, "    syscall\n");
+            } else {
+                // treat as string pointer, calculate length with strlen loop
+                eval_expr(out, str_expr); // load string pointer into rax
+                fprintf(out, "    mov rsi, rax\n"); // string pointer
+                fprintf(out, "    xor rdx, rdx\n"); // length counter = 0
+                fprintf(out, "    mov rcx, rsi\n"); // copy pointer for loop
+                // generate unique labels to avoid duplicate label errors
+                int lbl = strlen_label_count++;
+                fprintf(out, ".strlen_loop_%d:\n", lbl);
+                fprintf(out, "    cmp byte [rcx], 0\n"); // check for null terminator
+                fprintf(out, "    je .strlen_done_%d\n", lbl);
+                fprintf(out, "    inc rdx\n"); // increment length
+                fprintf(out, "    inc rcx\n"); // advance pointer
+                fprintf(out, "    jmp .strlen_loop_%d\n", lbl);
+                fprintf(out, ".strlen_done_%d:\n", lbl);
+                fprintf(out, "    mov rax, 1\n"); // write syscall
+                fprintf(out, "    mov rdi, %d\n", fd); // file descriptor
+                fprintf(out, "    syscall\n");
+            }
         }
         return;
     }
@@ -394,6 +498,9 @@ void generate(Node *nodes, int count, const char *filename) {
     // emit section .data with all string literals
     emit_data_section(out);
 
+    // emit section .bss with runtime buffers
+    emit_bss_section(out);
+
     // emit section .text and _start
     fprintf(out, "section .text\n");
     fprintf(out, "global _start\n");
@@ -417,6 +524,9 @@ void generate(Node *nodes, int count, const char *filename) {
             emit_func_def(out, nodes[i].data.func_def);
         }
     }
+
+    // emit the __int_to_str helper function
+    emit_int_to_str_helper(out);
 
     fclose(out); // close file
 

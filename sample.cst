@@ -1,3 +1,6 @@
-str name = "Oliver Poole";
-write(stdout, name);
+int x = 42;
+write(stdout, x);
+write(stdout, "\n");
+write(stdout, 123);
+write(stdout, "\n");
 exit(0);
