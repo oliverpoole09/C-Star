@@ -17,6 +17,10 @@ node\_var\_decl
 \\
 node\_reassign
 \\
+node\_func\_def
+\\
+node\_return
+\\
 \end{cases}
 \\
 \\
@@ -27,6 +31,10 @@ node\_reassign
 \text{VarDeclNode}
 \\
 \text{ReAssignNode}
+\\
+\text{FuncDefNode}
+\\
+\text{ReturnNode}
 \\
 \end{cases}
 \\
@@ -71,6 +79,8 @@ identifier\text{ Token}
 \\
 \text{BinOpExpr}
 \\
+\text{FuncCallNode}
+\\
 \end{cases}
 \\
 \\
@@ -83,6 +93,45 @@ left\text{ ExprNode}
 right\text{ ExprNode}
 \\
 \end{cases}
+\\
+\\
+\text{FuncDefNode} &\to
+\begin{cases}
+\text{DataType}
+\\
+identifier\text{ Token}
+\\
+\text{Param } (up\ to\ 64)
+\\
+param\_count\ (int)
+\\
+\text{Node}
+\\
+body\_count\ (int)
+\end{cases}
+\\
+\\
+\text{FuncCallNode} &\to
+\begin{cases}
+identifier\text{ Token}
+\\
+\text{ExprNode } (up\ to\ 64)
+\\
+arg\_count\ (int)
+\end{cases}
+\\
+\\
+\text{Param} &\to
+\begin{cases}
+\text{DataType}
+\\
+identifier\text{ Token}
+\\
+\end{cases}
+\\
+\\
+\text{ReturnNode} &\to
+\text{ExprNode}
 \\
 \\
 \text{VarExpr} &\to
@@ -100,6 +149,8 @@ expr\_int\_lit
 expr\_var
 \\
 expr\_binop
+\\
+expr\_func\_call
 \\
 \end{cases}
 \\

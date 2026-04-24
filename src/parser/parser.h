@@ -2,6 +2,12 @@
 #define PARSER_H
 #include "../tokenizer/tokenizer.h"
 
+// Forward Decleration of Node
+typedef struct Node Node;
+
+// Forward declaration of ExprNode
+typedef struct ExprNode ExprNode;
+
 // All Binary Operators (+, -, *, /, etc.)
 typedef enum {
     OP_ADD,
@@ -19,7 +25,8 @@ typedef enum {
 typedef enum {
     EXPR_INT_LIT,
     EXPR_VAR,
-    EXPR_BINOP
+    EXPR_BINOP,
+    EXPR_FUNC_CALL
 } ExprType;
 
 // Integer Literal Expression Structure
@@ -32,8 +39,11 @@ typedef struct {
     Token ident;
 } VarExpr;
 
-// Forward declaration of ExprNode so BinOpExpr can point to it
-typedef struct ExprNode ExprNode;
+// Function Paramaters (int x, int y, etc.)
+typedef struct {
+    DataType data_type;
+    Token ident;
+} Param;
 
 // Binary Operator Expression Structure
 typedef struct {
@@ -42,11 +52,19 @@ typedef struct {
     ExprNode *right;
 } BinOpExpr;
 
+// Function Calling Node Structure (defined before ExprData so it can be embedded)
+typedef struct {
+    Token ident;
+    ExprNode *args;
+    int arg_count;
+} FuncCallNode;
+
 // Types of data found in Expression Node
 typedef union {
     IntLiteralExpr int_lit;
     VarExpr var;
     BinOpExpr bin_op;
+    FuncCallNode func_call;
 } ExprData;
 
 // Expression Node Structure
@@ -54,6 +72,21 @@ struct ExprNode {
     ExprType type;
     ExprData data;
 };
+
+// Return Node Structure
+typedef struct {
+    ExprNode expr;
+} ReturnNode;
+
+// Function Definition Node Structure
+typedef struct {
+    DataType return_type;
+    Token ident;
+    Param params[64];
+    int param_count;
+    Node *body;
+    int body_count;
+} FuncDefNode;
 
 // Var Decleration Node Structure
 typedef struct {
@@ -78,20 +111,35 @@ typedef union {
     ExitNode exit;
     VarDeclNode var_decl;
     ReAssignNode re_assign;
+    FuncCallNode func_call;
+    FuncDefNode func_def;
+    ReturnNode ret;
 } NodeData;
 
 // Types of Nodes (Constants)
 typedef enum {
     NODE_EXIT,
     NODE_VAR_DECL,
-    NODE_REASSIGN
+    NODE_REASSIGN,
+    NODE_FUNC_DEF,
+    NODE_FUNC_CALL,
+    NODE_RETURN
 } NodeType;
 
 // Node Structure
-typedef struct {
+struct Node {
     NodeType type;
     NodeData data;
-} Node;
+};
+
+// Parse Function Definition
+FuncDefNode parse_func_def(Token *tokens, int token_count, int *i);
+
+// Parse Function Call
+FuncCallNode parse_func_call(Token *tokens, int *i, int consume_semicolon);
+
+// Parse Return Statement
+ReturnNode parse_return(Token *tokens, int *i);
 
 // Parse Expressions Function
 ExprNode parse_expr(Token *tokens, int *i);
@@ -106,7 +154,7 @@ VarDeclNode parse_var_decl(Token *tokens, int *i);
 ReAssignNode parse_reassign(Token *tokens, int *i);
 
 // Parse Function (Turn Tokens to Nodes)
-Node *parse(Token *tokens, int token_count, int *count);
+Node *parse(Token *tokens, int token_count, int *count, int *i, TokenType stop_token);
 
 // print nodes function for debugging
 void print_nodes(Node *nodes, int count);

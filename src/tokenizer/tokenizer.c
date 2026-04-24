@@ -52,6 +52,12 @@ Token *tokenize(const char *str, int *count) {
                 buf_len = 0; // reset buf_len
                 continue;
             }
+            // if chars/keyword in buffer = "return"
+            else if (strcmp(buffer, "return") == 0) {
+                tokens[(*count)++] = (Token){.type = RETURN, .value = NULL}; // push RETURN token into tokens buffer and increase count
+                buf_len = 0; // reset buf_len
+                continue;
+            }
             // if chars/keyword in buffer doesn't match to anything, assume its a identifier
             else {
                 char *ident_name = malloc(strlen(buffer) + 1);
@@ -135,6 +141,21 @@ Token *tokenize(const char *str, int *count) {
             }
             continue;
         }
+        // if current char is a left curly bracket
+        else if (c == '{') {
+            tokens[(*count)++] = (Token){.type = LEFT_CURL, .value = NULL}; // push LEFT_CURL token into tokens buffer, inc count
+            continue;
+        }
+        // if current char is a right curly bracket
+        else if (c == '}') {
+            tokens[(*count)++] = (Token){.type = RIGHT_CURL, .value = NULL}; // push RIGHT_CURL token into tokens buffer, inc count
+            continue;
+        }
+        // if current char is a comma
+        else if (c == ',') {
+            tokens[(*count)++] = (Token){.type = COMMA, .value = NULL}; // push COMMA token into tokens buffer, inc count
+            continue;
+        }
         // if current char is a space, ignore it
         else if(isspace(c)) {
             continue;
@@ -155,7 +176,7 @@ Token *tokenize(const char *str, int *count) {
 // print tokens function for debugging
 void print_tokens(Token *tokens) {
     const char *type_names[] = {
-        "EXIT", "INT_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH"
+        "EXIT", "INT_LIT", "SEMICOLON", "LEFT_PAREN", "RIGHT_PAREN", "FILE_END", "DT_INT", "IDENT", "EQUAL", "PLUS", "MINUS", "STAR", "SLASH", "LEFT_CURL", "RIGHT_CURL", "COMMA", "RETURN"
     };
 
     for (int i = 0; tokens[i].type != FILE_END; i++) {

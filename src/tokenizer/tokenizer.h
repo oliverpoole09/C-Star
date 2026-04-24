@@ -15,7 +15,11 @@ typedef enum {
     PLUS,
     MINUS,
     STAR,
-    SLASH
+    SLASH,
+    LEFT_CURL,
+    RIGHT_CURL,
+    COMMA,
+    RETURN
 } TokenType;
 
 // Struct of a Token

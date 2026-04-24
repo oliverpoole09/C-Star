@@ -32,7 +32,8 @@ int main(int argc, char* argv[]) {
     int token_count = 0; // hold amount of tokens in file
     Token *tokens = tokenize(contents, &token_count); // tokenize file contents
     int node_count = 0; // hold amount of nodes in file
-    Node *nodes = parse(tokens, token_count, &node_count); // parse tokens
+    int i = 0;
+    Node *nodes = parse(tokens, token_count, &node_count, &i, FILE_END); // parse tokens
     generate(nodes, node_count, argv[1]); // generate asm code from ast
 
     //printf("----------Tokens----------\n\n");

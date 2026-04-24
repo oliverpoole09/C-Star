@@ -4,22 +4,30 @@
 #include <string.h>
 #include <ctype.h>
 
-// Parse Primary Function (Primary: Integer Lits, Identifier)
+// Parse Function Call (forward declaration so parse_primary can use it)
+FuncCallNode parse_func_call(Token *tokens, int *i, int consume_semicolon);
+
+// Parse Primary Function (Primary: Integer Lits, Identifier, Function Calls)
 static ExprNode parse_primary(Token *tokens, int *i) {
     // if current token type is an int_lit
     if (tokens[*i].type == INT_LIT) {
         int val = atoi(tokens[*i].value); // store token value in val
         (*i)++; // next token
-        // return ExprNode with EXPR_INT_LIT typ and a int_lit value of (val)
+        // return ExprNode with EXPR_INT_LIT type and a int_lit value of (val)
         return (ExprNode){.type = EXPR_INT_LIT, .data.int_lit = (IntLiteralExpr){.value = val}};
-    } 
+    }
     // else if current token is an identifier
     else if (tokens[*i].type == IDENT) {
+        // if next token is a left paren, it's a function call inside an expression
+        if (tokens[*i + 1].type == LEFT_PAREN) {
+            FuncCallNode call = parse_func_call(tokens, i, 0); // 0 = don't consume semicolon
+            return (ExprNode){.type = EXPR_FUNC_CALL, .data.func_call = call};
+        }
         Token t = tokens[*i]; // store token as new token in t
         (*i)++; // next token
         // return ExprNode with EXPR_VAR type and a variable identifier of (t)
         return (ExprNode){.type = EXPR_VAR, .data.var = (VarExpr){.ident = t}};
-    } 
+    }
     // if no token type was found, throw error and quit
     else {
         fprintf(stderr, "Expected expression (integer literal or identifier), got token type %d\n", tokens[*i].type);
@@ -46,9 +54,9 @@ static ExprNode parse_term(Token *tokens, int *i) {
     return left;
 }
 
-// Parse Expressions Function (Follow pemdas order, parse + and - after.)
+// Parse Expressions Function (Follow PEMDAS order, parse + and - after)
 ExprNode parse_expr(Token *tokens, int *i) {
-    ExprNode left = parse_term(tokens, i); // parse left side 
+    ExprNode left = parse_term(tokens, i); // parse left side
     // while next token is + or -...
     while (tokens[*i].type == PLUS || tokens[*i].type == MINUS) {
         BinOp op = tokens[*i].type == PLUS ? OP_ADD : OP_SUB; // store operator
@@ -65,7 +73,7 @@ ExprNode parse_expr(Token *tokens, int *i) {
     return left;
 }
 
-// Parse Exit Function (Parse Exit Function)
+// Parse Exit Function
 ExitNode parse_exit(Token *tokens, int *i) {
     (*i)++; // skip exit token
     // if no left parenthesis, throw error and quit
@@ -130,13 +138,99 @@ ReAssignNode parse_reassign(Token *tokens, int *i) {
     return (ReAssignNode){.ident = ident, .expr = expr};
 }
 
+// Parse Return Statement
+ReturnNode parse_return(Token *tokens, int *i) {
+    (*i)++; // skip return token
+    ExprNode expr = parse_expr(tokens, i); // parse expression
+    // if no semicolon, throw error and quit
+    if (tokens[*i].type != SEMICOLON) {
+        fprintf(stderr, "Expected ';' after expression\n");
+        exit(1);
+    }
+    (*i)++; // skip semicolon token
+    return (ReturnNode){.expr = expr}; // return ReturnNode with expression
+}
+
+// Parse Function Call
+FuncCallNode parse_func_call(Token *tokens, int *i, int consume_semicolon) {
+    Token ident = tokens[(*i)++]; // save identifier (func name) and advance forward
+    (*i)++; // skip left parenthesis
+
+    ExprNode temp_args[64]; // temporary list to hold all args
+    int arg_count = 0; // keep track of args
+    // parse args until we reach a right parenthesis
+    while (tokens[*i].type != RIGHT_PAREN) {
+        temp_args[arg_count++] = parse_expr(tokens, i); // parse argument expression
+        // if next token is a comma, skip it and continue to next arg
+        if (tokens[*i].type == COMMA)
+            (*i)++;
+    }
+    (*i)++; // skip right parenthesis
+
+    // if consume_semicolon is true, check for and skip semicolon (standalone call)
+    if (consume_semicolon) {
+        if (tokens[*i].type != SEMICOLON) {
+            fprintf(stderr, "Expected ';' after function call\n");
+            exit(1);
+        }
+        (*i)++; // skip semicolon
+    }
+
+    FuncCallNode node; // create new FuncCallNode
+    node.ident = ident; // add identifier
+    node.arg_count = arg_count; // add arg count
+    node.args = malloc(sizeof(ExprNode) * arg_count); // allocate space for args
+    // copy args into node
+    for (int j = 0; j < arg_count; j++)
+        node.args[j] = temp_args[j];
+    return node;
+}
+
+// Parse Function Definition
+FuncDefNode parse_func_def(Token *tokens, int token_count, int *i) {
+    int body_count = 0; // tracks amount of nodes in the body
+    (*i)++; // skip return type (DT_INT)
+    Token ident = tokens[(*i)++]; // grab func name and advance forward
+    (*i)++; // skip left paren token
+
+    // Parse Params
+    Param params[64]; // list to hold all params
+    int param_count = 0; // keep track of params
+    // while token is not a right parenthesis (end of params)
+    while (tokens[*i].type != RIGHT_PAREN) {
+        (*i)++; // skip data_type
+        // grab param ident and store param in params list
+        params[param_count++] = (Param){.data_type = DATA_INT, .ident = tokens[(*i)++]};
+        // if token is a comma, skip it
+        if (tokens[*i].type == COMMA)
+            (*i)++;
+    }
+    (*i)++; // skip right parenthesis
+    (*i)++; // skip left curly bracket
+
+    // parse body inside function
+    Node *body = parse(tokens, token_count, &body_count, i, RIGHT_CURL);
+    (*i)++; // skip RIGHT_CURL
+
+    FuncDefNode node; // create new FuncDefNode
+    node.return_type = DATA_INT; // add return type
+    node.ident = ident; // add identifier
+    node.body = body; // add nodes in body
+    node.body_count = body_count; // add amount of nodes in body
+    node.param_count = param_count; // add param count
+    // for every param in param_count, add it to the FuncDefNode
+    for (int j = 0; j < param_count; j++)
+        node.params[j] = params[j];
+    return node; // return FuncDefNode
+}
+
 // Parse Function (Turn Tokens to Nodes)
-Node *parse(Token *tokens, int token_count, int *count) {
+Node *parse(Token *tokens, int token_count, int *count, int *i, TokenType stop_token) {
     size_t capacity = 10; // max amount of nodes
     Node *nodes = malloc(sizeof(Node) * capacity); // allocate space for 10 nodes
 
     // iterate through every token in tokens
-    for (int i = 0; i < token_count;) {
+    for (; tokens[*i].type != stop_token && tokens[*i].type != FILE_END;) {
         // if we reach max capacity for nodes...
         if (*count == capacity) {
             capacity += 10; // increase capacity by 10
@@ -148,25 +242,33 @@ Node *parse(Token *tokens, int token_count, int *count) {
             }
         }
 
-        // if we reach FILE_END token, break out of loop (should end regardless)
-        if (tokens[i].type == FILE_END) {
-            break;
+        // if current token is DT_INT and 2nd next is LEFT_PAREN, it's a function definition
+        if (tokens[*i].type == DT_INT && tokens[*i + 2].type == LEFT_PAREN) {
+            nodes[(*count)++] = (Node){.type = NODE_FUNC_DEF, .data.func_def = parse_func_def(tokens, token_count, i)};
         }
-        // if current token is an EXIT token, save new node and parse_exit()
-        else if (tokens[i].type == EXIT) {
-            nodes[(*count)++] = (Node){.type = NODE_EXIT, .data.exit = parse_exit(tokens, &i)};
-        } 
-        // if current token is an DT_INT token, save new node and parse_var_decl()
-        else if (tokens[i].type == DT_INT) {
-            nodes[(*count)++] = (Node){.type = NODE_VAR_DECL, .data.var_decl = parse_var_decl(tokens, &i)};
+        // if current token is DT_INT, it's a variable declaration
+        else if (tokens[*i].type == DT_INT) {
+            nodes[(*count)++] = (Node){.type = NODE_VAR_DECL, .data.var_decl = parse_var_decl(tokens, i)};
         }
-        // if current token is an IDENT and next is EQUAL, it's a reassignment
-        else if (tokens[i].type == IDENT && tokens[i + 1].type == EQUAL) {
-            nodes[(*count)++] = (Node){.type = NODE_REASSIGN, .data.re_assign = parse_reassign(tokens, &i)};
+        // if current token is EXIT, it's an exit statement
+        else if (tokens[*i].type == EXIT) {
+            nodes[(*count)++] = (Node){.type = NODE_EXIT, .data.exit = parse_exit(tokens, i)};
+        }
+        // if current token is IDENT and next is LEFT_PAREN, it's a standalone function call
+        else if (tokens[*i].type == IDENT && tokens[*i + 1].type == LEFT_PAREN) {
+            nodes[(*count)++] = (Node){.type = NODE_FUNC_CALL, .data.func_call = parse_func_call(tokens, i, 1)};
+        }
+        // if current token is IDENT and next is EQUAL, it's a reassignment
+        else if (tokens[*i].type == IDENT && tokens[*i + 1].type == EQUAL) {
+            nodes[(*count)++] = (Node){.type = NODE_REASSIGN, .data.re_assign = parse_reassign(tokens, i)};
+        }
+        // if current token is RETURN, it's a return statement
+        else if (tokens[*i].type == RETURN) {
+            nodes[(*count)++] = (Node){.type = NODE_RETURN, .data.ret = parse_return(tokens, i)};
         }
         // if token does not match any known tokens, throw error and quit
         else {
-            fprintf(stderr, "Unexpected token type %d\n", tokens[i].type);
+            fprintf(stderr, "Unexpected token type %d\n", tokens[*i].type);
             exit(1);
         }
     }
@@ -200,6 +302,15 @@ static void print_expr(ExprNode expr) {
         print_expr(*expr.data.bin_op.right);
         printf(")");
     }
+    else if (expr.type == EXPR_FUNC_CALL) {
+        printf("FuncCall(%s, args: [", expr.data.func_call.ident.value);
+        for (int i = 0; i < expr.data.func_call.arg_count; i++) {
+            print_expr(expr.data.func_call.args[i]);
+            if (i < expr.data.func_call.arg_count - 1)
+                printf(", ");
+        }
+        printf("])");
+    }
 }
 
 // print nodes function for debugging
@@ -220,6 +331,33 @@ void print_nodes(Node *nodes, int count) {
                 printf("ReAssignNode { ident: %s, expr: ", nodes[i].data.re_assign.ident.value);
                 print_expr(nodes[i].data.re_assign.expr);
                 printf(" }\n");
+                break;
+            case NODE_FUNC_DEF:
+                printf("FuncDefNode { ident: %s, params: [", nodes[i].data.func_def.ident.value);
+                for (int j = 0; j < nodes[i].data.func_def.param_count; j++) {
+                    printf("%s", nodes[i].data.func_def.params[j].ident.value);
+                    if (j < nodes[i].data.func_def.param_count - 1) {
+                        printf(", ");
+                    }
+                }
+                printf("], body:\n");
+                print_nodes(nodes[i].data.func_def.body, nodes[i].data.func_def.body_count);
+                printf("}\n");
+                break;
+            case NODE_RETURN:
+                printf("ReturnNode { expr: ");
+                print_expr(nodes[i].data.ret.expr);
+                printf(" }\n");
+                break;
+            case NODE_FUNC_CALL:
+                printf("FuncCallNode { ident: %s, args: [", nodes[i].data.func_call.ident.value);
+                for (int j = 0; j < nodes[i].data.func_call.arg_count; j++) {
+                    print_expr(nodes[i].data.func_call.args[j]);
+                    if (j < nodes[i].data.func_call.arg_count - 1) {
+                        printf(", ");
+                    }
+                }
+                printf("] }\n");
                 break;
         }
     }

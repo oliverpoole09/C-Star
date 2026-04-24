@@ -1,11 +1,8 @@
-// simple test program [Comment]
-/* 
-    I love C-Star So Much!
-    Don't you love it aswell?
-    Let's Dive In!
-    [Multi-Line Comment]
-*/
-int x = 0; // var x = 0 [var decleration]
-int y = x + 6; // var y = x + 1 (2) [arithmetic]
-x = y / 2; // var x = y / 2 (3) [redecleration]
-exit(x); // exit with exit_code (x) [exit]
+
+int add(int x, int y) {
+    return x + y;
+}
+
+int sum = add(1, 8);
+
+exit(sum);

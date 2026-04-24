@@ -9,9 +9,19 @@ typedef struct {
     int depth;
 } VarEntry;
 
+// ParamEntry Structure (holds param name and rbp offset)
+typedef struct {
+    char name[256];
+    int rbp_offset;
+} ParamEntry;
+
 static VarEntry var_table[256]; // static var table to hold variables
 static int var_count = 0; // holds amount of vars created
 static int stack_depth = 0; // tracks temporary pushes during expression evaluation
+
+static ParamEntry param_table[64]; // param table for current function
+static int param_count = 0; // holds amount of params in current function
+static int in_function = 0; // tracks if we are inside a function
 
 // function for looking up variables in table
 static int lookup_var(const char *name) {
@@ -27,21 +37,42 @@ static int lookup_var(const char *name) {
     exit(1);
 }
 
+// function for looking up params in param table, returns rbp offset or -1 if not found
+static int lookup_param(const char *name) {
+    for (int i = 0; i < param_count; i++) {
+        if (strcmp(param_table[i].name, name) == 0)
+            return param_table[i].rbp_offset;
+    }
+    return -1; // not found
+}
+
+// forward declarations
+static void emit_func_call(FILE *out, FuncCallNode call);
+static void emit_nodes(FILE *out, Node *nodes, int count, int *has_exit);
+
 // function to evaluate expression and put result in rax
 static void eval_expr(FILE *out, ExprNode expr) {
     // if expression is an integer literal
     if (expr.type == EXPR_INT_LIT) {
         // load literal value directly into rax
         fprintf(out, "    mov rax, %d\n", expr.data.int_lit.value);
-    } 
+    }
     // if expression is a variable
     else if (expr.type == EXPR_VAR) {
-        // find where variable is (how deep in the stack)
-        int depth = lookup_var(expr.data.var.ident.value);
-        // account for both variables above us and any temp pushes
-        int offset = (var_count - depth + stack_depth) * 8;
-        // load vars value directly from the stack into rax
-        fprintf(out, "    mov rax, [rsp + %d]\n", offset);
+        // if inside a function, check param table first
+        int param_offset = lookup_param(expr.data.var.ident.value);
+        if (in_function && param_offset != -1) {
+            // load param value from rbp offset
+            fprintf(out, "    mov rax, [rbp + %d]\n", param_offset);
+        } 
+        else {
+            // find where variable is (how deep in the stack)
+            int depth = lookup_var(expr.data.var.ident.value);
+            // account for both variables above us and any temp pushes
+            int offset = (var_count - depth + stack_depth) * 8;
+            // load vars value directly from the stack into rax
+            fprintf(out, "    mov rax, [rsp + %d]\n", offset);
+        }
     }
     // if expression is a binary operation (+, -, *, /)
     else if (expr.type == EXPR_BINOP) {
@@ -78,44 +109,75 @@ static void eval_expr(FILE *out, ExprNode expr) {
                 break;
         }
     }
+    // if expression is a function call, emit the call and result lands in rax
+    else if (expr.type == EXPR_FUNC_CALL) {
+        emit_func_call(out, expr.data.func_call);
+    }
 }
 
-// Generate ASM Code (Nodes to ASM Code)
-void generate(Node *nodes, int count, const char *filename) {
-    // strip path prefix (everything before the last '/') to get bare filename
-    const char *base = strrchr(filename, '/');
-    base = base ? base + 1 : filename;
- 
-    // copy bare filename and strip the extension to get the base name
-    char base_name[256];
-    strncpy(base_name, base, sizeof(base_name));
-    char *dot = strrchr(base_name, '.');
-    if (dot) *dot = '\0'; // replace '.' with null terminator to cut off extension
- 
-    // build output file paths using base name
-    char asm_path[512], obj_path[512], bin_path[512];
-    snprintf(asm_path, sizeof(asm_path), "/tmp/%s.asm", base_name);
-    snprintf(obj_path, sizeof(obj_path), "/tmp/%s.o",   base_name);
-    int dir_len = base - filename;
-    strncpy(bin_path, filename, dir_len);
-    bin_path[dir_len] = '\0';
-    strncat(bin_path, base_name, sizeof(bin_path) - dir_len - 1);
- 
-    // create and open temporary .asm file
-    FILE *out = fopen(asm_path, "w");
+// emit a function call (push args right to left, call, clean up stack)
+static void emit_func_call(FILE *out, FuncCallNode call) {
+    // push arguments onto stack in reverse order (right to left)
+    for (int i = call.arg_count - 1; i >= 0; i--) {
+        eval_expr(out, call.args[i]); // evaluate arg into rax
+        fprintf(out, "    push rax\n"); // push arg onto stack
+    }
+    // call the function
+    fprintf(out, "    call %s\n", call.ident.value);
+    // clean up args from stack (each arg is 8 bytes)
+    if (call.arg_count > 0)
+        fprintf(out, "    add rsp, %d\n", call.arg_count * 8);
+    // result is now in rax
+}
 
-    // standard boiler plate asm start
-    fprintf(out, "global _start\n");
-    fprintf(out, "_start:\n");
+// emit a function definition as a labeled asm block
+static void emit_func_def(FILE *out, FuncDefNode func) {
+    // save outer scope var table and counts
+    VarEntry saved_var_table[256];
+    int saved_var_count = var_count;
+    int saved_stack_depth = stack_depth;
+    int saved_param_count = param_count;
+    int saved_in_function = in_function;
+    memcpy(saved_var_table, var_table, sizeof(var_table));
 
-    int has_exit = 0; // check if program already has an exit function (reduce redundancy)
+    // reset var table for function scope
+    var_count = 0;
+    stack_depth = 0;
 
-    // for every node in node list
+    // register params in param table with rbp offsets
+    // args are pushed right to left so first param is at highest rbp offset
+    // rbp+8 = return address, rbp+16 = last arg pushed, rbp+16+(n-1)*8 = first arg
+    param_count = 0;
+    in_function = 1;
+    for (int i = 0; i < func.param_count; i++) {
+        strncpy(param_table[i].name, func.params[i].ident.value, 255);
+        param_table[i].rbp_offset = 16 + (func.param_count - 1 - i) * 8;
+        param_count++;
+    }
+
+    // emit function label and set up stack frame
+    fprintf(out, "%s:\n", func.ident.value);
+    fprintf(out, "    push rbp\n"); // save caller's base pointer
+    fprintf(out, "    mov rbp, rsp\n"); // set base pointer to current stack top
+
+    // emit body nodes using shared helper
+    int dummy_has_exit = 0;
+    emit_nodes(out, func.body, func.body_count, &dummy_has_exit);
+
+    // clear param table and restore outer scope
+    param_count = saved_param_count;
+    in_function = saved_in_function;
+    memcpy(var_table, saved_var_table, sizeof(var_table));
+    var_count = saved_var_count;
+    stack_depth = saved_stack_depth;
+}
+
+// shared node emitter used by both generate() and emit_func_def()
+static void emit_nodes(FILE *out, Node *nodes, int count, int *has_exit) {
     for (int i = 0; i < count; i++) {
-        // switch for every case a node could be
         switch (nodes[i].type) {
             // if node is a variable decleration
-            case NODE_VAR_DECL: 
+            case NODE_VAR_DECL:
                 eval_expr(out, nodes[i].data.var_decl.expr); // evaluate expression and put in rax
                 fprintf(out, "    push rax\n"); // push rax (value) to stack to store variable
                 // record var name and depth in the variable table
@@ -124,31 +186,92 @@ void generate(Node *nodes, int count, const char *filename) {
                 var_count++; // increase var_count
                 break;
             // if node is a reassignment
-            case NODE_REASSIGN:
+            case NODE_REASSIGN: {
                 eval_expr(out, nodes[i].data.re_assign.expr); // evaluate expression and put in rax
                 // find where the variable is on the stack
                 int depth = lookup_var(nodes[i].data.re_assign.ident.value);
-                int offset = (var_count - depth) * 8;
+                int offset = (var_count - depth + stack_depth) * 8;
                 // write rax back to the variable's stack slot
                 fprintf(out, "    mov [rsp + %d], rax\n", offset);
                 break;
-            // if node is a exit function/command
-            case NODE_EXIT: 
+            }
+            // if node is a function definition, skip (emitted separately after _start)
+            case NODE_FUNC_DEF:
+                break;
+            // if node is a standalone function call
+            case NODE_FUNC_CALL:
+                emit_func_call(out, nodes[i].data.func_call); // emit call, result in rax
+                break;
+            // if node is an exit statement
+            case NODE_EXIT:
                 eval_expr(out, nodes[i].data.exit.expr); // evaluate expression and put in rax
                 // call exit syscall with expression in exit code
                 fprintf(out, "    mov rdi, rax\n");
                 fprintf(out, "    mov rax, 60\n");
                 fprintf(out, "    syscall\n");
-                has_exit = 1; // we have an exit now, set it to true
+                if (has_exit) *has_exit = 1; // mark that we have an exit
+                break;
+            // if node is a return statement
+            case NODE_RETURN:
+                if (!in_function) {
+                    fprintf(stderr, "return statement outside of function\n");
+                    exit(1);
+                }
+                eval_expr(out, nodes[i].data.ret.expr); // result in rax
+                fprintf(out, "    pop rbp\n"); // restore caller's base pointer
+                fprintf(out, "    ret\n"); // return to caller
                 break;
         }
     }
+}
+
+// Generate ASM Code (Nodes to ASM Code)
+void generate(Node *nodes, int count, const char *filename) {
+    // strip path prefix (everything before the last '/') to get bare filename
+    const char *base = strrchr(filename, '/');
+    base = base ? base + 1 : filename;
+
+    // copy bare filename and strip the extension to get the base name
+    char base_name[256];
+    strncpy(base_name, base, sizeof(base_name));
+    char *dot = strrchr(base_name, '.');
+    if (dot) {
+        *dot = '\0'; // replace '.' with null terminator to cut off extension
+    }
+
+    // build output file paths using base name
+    char asm_path[512], obj_path[512], bin_path[512];
+    snprintf(asm_path, sizeof(asm_path), "/tmp/%s.asm", base_name);
+    snprintf(obj_path, sizeof(obj_path), "/tmp/%s.o",   base_name);
+    int dir_len = base - filename;
+    strncpy(bin_path, filename, dir_len);
+    bin_path[dir_len] = '\0';
+    strncat(bin_path, base_name, sizeof(bin_path) - dir_len - 1);
+
+    // create and open temporary .asm file
+    FILE *out = fopen(asm_path, "w");
+
+    // standard boilerplate asm start
+    fprintf(out, "global _start\n");
+    fprintf(out, "_start:\n");
+
+    int has_exit = 0; // check if program already has an exit (reduce redundancy)
+
+    // emit all top level nodes
+    emit_nodes(out, nodes, count, &has_exit);
 
     // if no exit command was found, add one anyways with exit code 0
     if (!has_exit) {
         fprintf(out, "    mov rax, 60\n");
         fprintf(out, "    mov rdi, 0\n");
         fprintf(out, "    syscall\n");
+    }
+
+    // emit all function definitions after the _start block
+    for (int i = 0; i < count; i++) {
+        if (nodes[i].type == NODE_FUNC_DEF) {
+            emit_func_def(out, nodes[i].data.func_def);
+        }
     }
 
     fclose(out); // close file
@@ -178,8 +301,8 @@ void generate(Node *nodes, int count, const char *filename) {
         fprintf(stderr, "ld failed with code %d\n", ld_ret);
         exit(1);
     }
- 
-    // remove temporary files (only keeps test.cst and executable)
+
+    // remove temporary files (only keeps source and executable)
     remove(asm_path);
     remove(obj_path);
 }
