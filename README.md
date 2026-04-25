@@ -6,7 +6,7 @@
   </a>
 </p>
 
-<h1 align="center">C*</h1>
+<img src="icons/C_STAR_LOGO.png" width="64" height="64" alt="icon" align="center">
 <p align="center"><i>A compiled language built from the ground up by Oliver Poole.</i></p>
 
 ---
