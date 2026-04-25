@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <img src="icons/C_STAR_LOGO.png" width="50%" alt="icon">
+  <img src="icons/C_STAR_LOGO.png" width="25%" alt="icon">
 </p>
 <p align="center"><i>A compiled language built from the ground up by Oliver Poole.</i></p>
 
