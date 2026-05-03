@@ -117,12 +117,6 @@ int sum = add(4, 2); // returns 4 + 2 (6)
 
 ---
 
-## 🔮 Planned Features
-
-> *This section is a work in progress — more coming soon!*
-
----
-
 ## 🚀 Getting Started
 
 > *Installation and usage instructions coming soon.*
