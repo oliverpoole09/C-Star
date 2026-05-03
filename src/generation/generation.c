@@ -168,6 +168,7 @@ static void emit_data_section(FILE *out) {
 static void emit_bss_section(FILE *out) {
     fprintf(out, "section .bss\n");
     fprintf(out, "    __int_buf resb 32\n"); // buffer for int to string conversion (32 bytes fits any 64-bit int)
+    fprintf(out, "    __read_buf resb 256\n"); // buffer to store user input for read() function
 }
 
 // emit the __int_to_str helper function
@@ -177,9 +178,9 @@ static void emit_int_to_str_helper(FILE *out) {
     fprintf(out, "__int_to_str:\n");
     fprintf(out, "    push rbp\n");
     fprintf(out, "    mov rbp, rsp\n");
-    fprintf(out, "    mov rax, rdi\n");       // number to convert
-    fprintf(out, "    mov rcx, rsi\n");       // buffer pointer
-    fprintf(out, "    xor r9, r9\n");         // digit count = 0
+    fprintf(out, "    mov rax, rdi\n"); // number to convert
+    fprintf(out, "    mov rcx, rsi\n"); // buffer pointer
+    fprintf(out, "    xor r9, r9\n"); // digit count = 0
 
     // handle 0 specially
     fprintf(out, "    test rax, rax\n");
@@ -191,37 +192,37 @@ static void emit_int_to_str_helper(FILE *out) {
 
     // extract digits in reverse order
     fprintf(out, "__its_convert:\n");
-    fprintf(out, "    mov r8, rcx\n");        // save buffer start
+    fprintf(out, "    mov r8, rcx\n"); // save buffer start
     fprintf(out, "__its_loop:\n");
     fprintf(out, "    test rax, rax\n");
     fprintf(out, "    jz __its_reverse\n");
     fprintf(out, "    xor rdx, rdx\n");
     fprintf(out, "    mov rbx, 10\n");
-    fprintf(out, "    div rbx\n");            // rax = quotient, rdx = remainder
-    fprintf(out, "    add dl, 48\n");         // convert remainder to ASCII digit
-    fprintf(out, "    mov [rcx], dl\n");      // store digit in buffer
-    fprintf(out, "    inc rcx\n");            // advance buffer pointer
-    fprintf(out, "    inc r9\n");             // increment digit count
+    fprintf(out, "    div rbx\n"); // rax = quotient, rdx = remainder
+    fprintf(out, "    add dl, 48\n"); // convert remainder to ASCII digit
+    fprintf(out, "    mov [rcx], dl\n"); // store digit in buffer
+    fprintf(out, "    inc rcx\n"); // advance buffer pointer
+    fprintf(out, "    inc r9\n"); // increment digit count
     fprintf(out, "    jmp __its_loop\n");
 
     // reverse the digits in the buffer
     fprintf(out, "__its_reverse:\n");
-    fprintf(out, "    mov r10, r8\n");        // start pointer
-    fprintf(out, "    dec rcx\n");            // end pointer
+    fprintf(out, "    mov r10, r8\n"); // start pointer
+    fprintf(out, "    dec rcx\n"); // end pointer
     fprintf(out, "__its_rev_loop:\n");
     fprintf(out, "    cmp r10, rcx\n");
     fprintf(out, "    jge __its_done\n");
-    fprintf(out, "    mov al, [r10]\n");      // swap bytes at start and end
+    fprintf(out, "    mov al, [r10]\n"); // swap bytes at start and end
     fprintf(out, "    mov bl, [rcx]\n");
     fprintf(out, "    mov [r10], bl\n");
     fprintf(out, "    mov [rcx], al\n");
-    fprintf(out, "    inc r10\n");            // move start pointer forward
-    fprintf(out, "    dec rcx\n");            // move end pointer backward
+    fprintf(out, "    inc r10\n"); // move start pointer forward
+    fprintf(out, "    dec rcx\n"); // move end pointer backward
     fprintf(out, "    jmp __its_rev_loop\n");
 
     fprintf(out, "__its_done:\n");
-    fprintf(out, "    mov rdx, r9\n");        // return length in rdx
-    fprintf(out, "    mov rsi, r8\n");        // return buffer start in rsi
+    fprintf(out, "    mov rdx, r9\n"); // return length in rdx
+    fprintf(out, "    mov rsi, r8\n"); // return buffer start in rsi
     fprintf(out, "    pop rbp\n");
     fprintf(out, "    ret\n");
 }
@@ -430,6 +431,36 @@ static void emit_func_call(FILE *out, FuncCallNode call) {
                 fprintf(out, "    syscall\n");
             }
         }
+        return;
+    }
+    // built in function: read(fd, prompt);
+    else if (strcmp(call.ident.value, "read") == 0) {
+        // first arg is stdin (fd = 0)
+        // second arg is the prompt string to display before reading
+        ExprNode prompt_expr = call.args[1];
+
+        // emit the prompt string first
+        if (prompt_expr.type == EXPR_STR_LIT) {
+            int idx = register_string(prompt_expr.data.str_lit.value);
+            fprintf(out, "    mov rax, 1\n"); // write syscall
+            fprintf(out, "    mov rdi, 1\n"); // stdout
+            fprintf(out, "    mov rsi, %s\n", str_table[idx].label); // prompt pointer
+            fprintf(out, "    mov rdx, %s_len\n", str_table[idx].label); // prompt length
+            fprintf(out, "    syscall\n");
+        }
+
+        // read input into __read_buf
+        fprintf(out, "    mov rax, 0\n"); // read syscall
+        fprintf(out, "    mov rdi, 0\n"); // stdin
+        fprintf(out, "    mov rsi, __read_buf\n"); // buffer
+        fprintf(out, "    mov rdx, 256\n"); // max bytes
+        fprintf(out, "    syscall\n");
+
+        // null terminate the input (rax = bytes read, overwrite the newline)
+        fprintf(out, "    mov byte [__read_buf + rax - 1], 0\n"); // replace newline with null terminator
+
+        // return pointer to buffer in rax so it can be assigned to a variable
+        fprintf(out, "    mov rax, __read_buf\n");
         return;
     }
 
